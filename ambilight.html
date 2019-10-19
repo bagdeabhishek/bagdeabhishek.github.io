@@ -1,3 +1,8 @@
+---
+layout: page
+title: Ambilight
+permalink: /ambilight/
+---
 <!DOCTYPE html>
 <html lang="en-US">
   <head>
@@ -43,7 +48,7 @@
   		project</a>. One post on <a href="https://www.reddit.com/r/battlestations"> r/battlestations</a> caught my attention and I decided to mod my monitor with a ambilight. I was familiar with some software but making it wok on mac os was a bit challenging. Before I explain how I accomplished that here's a video of the ambilight in action.
   	</p>
     <div align="center">
-  	<iframe align="center" width="560" height="315" src="https://www.youtube.com/embed/dQw4w9WgXcQ" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/DI81c2mnmzU" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
     </div>
   	<h1 id="header-1">Hardware</h1>
   	This is a list of hardware components used and the links to buy them. Note that I bought most of the electronic components from China using <a href="www.banggood.in">banggood.in</a> as it was considerably cheaper. You can source them locally if you dont want to wait for the components.
@@ -53,7 +58,33 @@
 	  	<li><a href="https://www.banggood.in/Wholesale-Arduino-Compatible-R3-UNO-ATmega16U2-AVR-USB-Board-p-68537.html?rmmds=myorder&cur_warehouse=CN">Arduino UNO</a> I brought this one because I wanted to learn how to use arduino. You can probably work with Arduino Nano if you want some thing cheaper</li>
 	</ul>
 
-	I also brought a soldering iron, set of wires and other electronic items like breadboard but you can probably use the one's you already hav lying around. If you don't have these, search for the cheapest one's on banggood and buy them.
+	I also brought a soldering iron, set of wires and other electronic items like breadboard but you can probably use the one's you already have lying around. If you don't have these, search for the cheapest one's on banggood and buy them. I'll also link the ones I bought in the end.
+
+  <h1 id="header-1">Setup</h1>
+  <h2 id="header-2">Wiring up the LEDs</h2>
+  Wiring up the arduino to the LEDs is pretty simple. The WS2812 LED strip has 3 input pins. 
+  <ol>
+    <li>The +5V is the power input. Connect this pin to Arduinos 5V pin, alternatively you can use an external power supply if the numbers of LEDs is large. </li>
+    <li>Connect the GND pin to the GND pin on the arduino or if you have an external power supply connect this pin to its ground terminal </li>
+    <li>The Data pin is the one which actually informs the LED which colour to display and which LED to light up. Connect it to any one of the Digital In pins, I used pin 9 for my setup.  </li>
+  </ol>>
+
+  <h2 id="header-2">Testing the LED's with Arduino</h2>
+  Since we have already wired up the arduino and the LED strip we can test the LED's using the FastLED library. Download it from arduino IDE and run some sample code. To check follow this steps
+  <ul>
+      <li>Go to Tools menu and select manage libraries. Search for FastLED library and install it.</li>
+
+      <li>Go to Files and select any file like Blink from the FastLed submenu</li>
+
+      <li>This will open up the sketch in the text editor. Select the number of LEDs and the data pin correctly </li>
+
+      <li>Upload the sketch to arduino and the LEDs should light up.</li>
+  </ul>
+  <p>Once we have made sure evrythin works we begin with the installation of Hyperion software. This software makes it easy to run the LED ambilight based on the colours being displayed on the screen. The software can be easily installed on Linux but takes some tweaking to run on MacOS. Follow the instructions provided <a href="https://github.com/yeutterg/hyperion-macos/blob/master/Install_Hyperion_MacOS.md">  here </a> or clone my forked repo directly from <a href="https://github.com/bagdeabhishek/hyperion.git">here </a></p>
+  <p>Hyperion works with different devices like Adalight, Philips Hue etc. What we want to do is emulate the AdaLight device using Arduino. This can be done with the help of an arduino sketch which I found on </p>
+
+
+
 	</section>
 </div>
 
