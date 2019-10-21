@@ -14,15 +14,15 @@ permalink: /ambilight/
 <!-- Begin Jekyll SEO tag v2.6.1 -->
 <title>DIY Ambilight for Monitor/TV.</title>
 <meta name="generator" content="Jekyll v4.0.0" />
-<meta property="og:title" content="Hacker theme" />
+<meta property="og:title" content="DIY Ambilight for your monitor!" />
 <meta property="og:locale" content="en_US" />
-<meta name="description" content="Hacker is a theme for GitHub Pages." />
-<meta property="og:description" content="Hacker is a theme for GitHub Pages." />
-<link rel="canonical" href="http://localhost:4000/ambilight.html" />
-<meta property="og:url" content="http://localhost:4000/ambilight.html" />
-<meta property="og:site_name" content="Hacker theme" />
+<meta name="description" content="Guide to create your won ambilight using WS2812 LEDs and Arduino" />
+<meta property="og:description" content="Guide to create your won ambilight using WS2812 LEDs and Arduino" />
+<link rel="canonical" href="https://bagdeabhishek.github.io/ambilight" />
+<meta property="og:url" content="https://bagdeabhishek.github.io/ambilight" />
+<meta property="og:site_name" content="Abhishek Bagade's blog" />
 <script type="application/ld+json">
-{"description":"Hacker is a theme for GitHub Pages.","@type":"WebSite","headline":"Hacker theme","url":"http://localhost:4000/ambilight.html","name":"Hacker theme","@context":"https://schema.org"}</script>
+{"description":"Guide to create your won ambilight using WS2812 LEDs and Arduino","@type":"WebSite","headline":"DIY Ambilight for your monitor!","url":"https://bagdeabhishek.github.io/ambilight","name":"DIY Ambilight for your monitor!","@context":"https://schema.org"}</script>
 <!-- End Jekyll SEO tag -->
 
   </head>
@@ -45,17 +45,19 @@ permalink: /ambilight/
      <div class="container">
       <section id="main_content">
   	<p> I recently purchased a monitor for my home setup and was looking for a fun side project to work on. I had some spare WS2812 leds lying around and an arduino which I used for my <a href="/musicled.html">Music controlled LEDs
-  		project</a>. One post on <a href="https://www.reddit.com/r/battlestations"> r/battlestations</a> caught my attention and I decided to mod my monitor with a ambilight. I was familiar with some software but making it wok on mac os was a bit challenging. Before I explain how I accomplished that here's a video of the ambilight in action.
+  		project</a>. One post on <a href="https://www.reddit.com/r/battlestations"> r/battlestations</a> caught my attention and I decided to mod my monitor with a ambilight. I was familiar with some software but making it work on mac os was a bit challenging. Before I explain how I accomplished that here's a video of the ambilight in action.
   	</p>
     <div align="center">
 <iframe width="560" height="315" src="https://www.youtube.com/embed/DI81c2mnmzU" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
     </div>
   	<h1 id="header-1">Hardware</h1>
-  	This is a list of hardware components used and the links to buy them. Note that I bought most of the electronic components from China using <a href="www.banggood.in">banggood.in</a> as it was considerably cheaper. You can source them locally if you dont want to wait for the components.
+  	This is a list of hardware components used and the links to buy them. Note that I bought most of the electronic components from China using <a href="www.banggood.in">banggood.in</a> as they were considerably cheaper. You can source them locally if you dont want to wait for the components.
   	<ul>
-	  	<li><a href="https://www.banggood.in/0_5M1M2M3M4M5M-USB-RGB-5050-Non-waterproof-WS2812-LED-TV-Strip-LightRemote-Control-Kit-DC5V-p-1259190.html?rmmds=myorder&ID=44707&cur_warehouse=CN">WS2812 LED strip: </a> I found this one to be the cheapest and best suited for my purpose. The strip comes with a LED controller with built-in effects and can be controlled by a remote which is included. My LED controller broke within a few days though but it's a nice addition if you wish them as stand alone lighting</li>
+	  	<li><a href="https://www.banggood.in/0_5M1M2M3M4M5M-USB-RGB-5050-Non-waterproof-WS2812-LED-TV-Strip-LightRemote-Control-Kit-DC5V-p-1259190.html?rmmds=myorder&ID=44707&cur_warehouse=CN">WS2812 LED strip:</a> I found this particular brand to be the cheapest and best suited for my purpose. The strip comes with a controller with built-in effects and can be controlled by a remote which is included. My LED controller broke within a few days though but it's a nice addition if you wish them as stand alone lighting</li>
 
-	  	<li><a href="https://www.banggood.in/Wholesale-Arduino-Compatible-R3-UNO-ATmega16U2-AVR-USB-Board-p-68537.html?rmmds=myorder&cur_warehouse=CN">Arduino UNO</a> I brought this one because I wanted to learn how to use arduino. You can probably work with Arduino Nano if you want some thing cheaper</li>
+	  	<li><a href="https://www.banggood.in/Wholesale-Arduino-Compatible-R3-UNO-ATmega16U2-AVR-USB-Board-p-68537.html?rmmds=myorder&cur_warehouse=CN">Arduino UNO:</a> I brought this one because I wanted to learn how to use arduino. You can probably work with Arduino Nano if you want some thing cheaper</li>
+      <li><a href="https://www.banggood.in/Geekcreit-Power-Supply-Module-830-Hole-Breadboard-Resistor-Capacitor-LED-Kit-For-Arduino-Beginner-p-1133908.html?rmmds=myorder&cur_warehouse=CN">Wires and stuff:</a> This is a generic set of wires for all my hobby projects. This also includes and assortment of electrical components like resistors, capacitors etc.</li>
+
 	</ul>
 
 	I also brought a soldering iron, set of wires and other electronic items like breadboard but you can probably use the one's you already have lying around. If you don't have these, search for the cheapest one's on banggood and buy them. I'll also link the ones I bought in the end.
@@ -64,10 +66,10 @@ permalink: /ambilight/
   <h2 id="header-2">Wiring up the LEDs</h2>
   Wiring up the arduino to the LEDs is pretty simple. The WS2812 LED strip has 3 input pins. 
   <ol>
-    <li>The +5V is the power input. Connect this pin to Arduinos 5V pin, alternatively you can use an external power supply if the numbers of LEDs is large. </li>
+    <li>The +5V is the power input. Connect this pin to Arduinos 5V pin, alternatively you can use an external power supply if you wish to power more LEDs. </li>
     <li>Connect the GND pin to the GND pin on the arduino or if you have an external power supply connect this pin to its ground terminal </li>
-    <li>The Data pin is the one which actually informs the LED which colour to display and which LED to light up. Connect it to any one of the Digital In pins, I used pin 9 for my setup.  </li>
-  </ol>>
+    <li>The Data pin is the one which informs the LED which colour to display and which LED to light up. Connect it to any one of the Digital IN pins, I used pin 9 for my setup.  </li>
+  </ol>
 
   <h2 id="header-2">Testing the LED's with Arduino</h2>
   Since we have already wired up the arduino and the LED strip we can test the LED's using the FastLED library. Download it from arduino IDE and run some sample code. To check follow this steps
@@ -80,10 +82,48 @@ permalink: /ambilight/
 
       <li>Upload the sketch to arduino and the LEDs should light up.</li>
   </ul>
-  <p>Once we have made sure evrythin works we begin with the installation of Hyperion software. This software makes it easy to run the LED ambilight based on the colours being displayed on the screen. The software can be easily installed on Linux but takes some tweaking to run on MacOS. Follow the instructions provided <a href="https://github.com/yeutterg/hyperion-macos/blob/master/Install_Hyperion_MacOS.md">  here </a> or clone my forked repo directly from <a href="https://github.com/bagdeabhishek/hyperion.git">here </a></p>
-  <p>Hyperion works with different devices like Adalight, Philips Hue etc. What we want to do is emulate the AdaLight device using Arduino. This can be done with the help of an arduino sketch which I found on </p>
+    <h2 id="header-2">Installing Hyperion</h2>
+  <p>Once we have made sure the LEDs work we start with the installation of Hyperion software. This software makes it easy to run the LED ambilight based on the colours being displayed on the screen. The software can be easily installed on Linux but takes some tweaking to run on MacOS. Follow the instructions provided <a href="https://github.com/yeutterg/hyperion-macos/blob/master/Install_Hyperion_MacOS.md">  here </a> or clone my forked repo directly from <a href="https://github.com/bagdeabhishek/hyperion.git">here</a> after copying the files from repo follow these steps.
+    <ol>
+      <li>Go to the directory and create a new directory named build</li>
+      <li>Run the following command <div class="language-bash highlighter-rouge"><code>cmake -DENABLE_DISPMANX=OFF -DENABLE_SPIDEV=OFF -DENABLE_V4L2=OFF -DENABLE_OSX=ON ..</code></div> </li>
+      <li>Run this command next <div class="language-bash highlighter-rouge"><code>make -j $(nproc)</code></div> </li>
+      <li>Clean up using <div class="language-bash highlighter-rouge"><code>strip bin/*</code></div> </li>
+      <li>Add both binaries to /bin <div class="language-bash highlighter-rouge"><code>sudo cp ./bin/hyperion-remote /usr/bin/ ;
+          sudo cp ./bin/hyperiond /usr/bin/</code></div> </li>
+    </ol>
+  </p>
+  <p>Hyperion works with different devices like Adalight, Philips Hue etc. What we want to do is emulate the AdaLight device using Arduino. This can be done with the help of an arduino sketch from <a href="https://github.com/bagdeabhishek/AdaLightArduinoEmulation">here</a>. Flash this sketch to your arduino device setting the correct DATA PIN (9 in our case) and BAUD RATE. </p>
+<h1 id="header-1">Applying LEDs to Monitor</h1>
+  <p>
+  Apply LEDs along the edge of your monitor. Make sure you count the number of LEDs along each side. I was reusing a LED strip I had cut previously so I had to do a little bit of Soldering, try to avoid soldering strips because it's really hard. If you still want to do it search for the video on youtube to get idea on how to do it. WS2812 can be directly applied by removing the sticker on the back. The glue holds well and you should face no problems, I had to use a double sided tape because my adhesive was all worn out. Once you've done that you can connect the terminals as we discussed earlier using the wires we got and the connector on the LED strip.</p>
+  <p>This Picture might give you idea (I have used double sided tape) <img src="../images/mointor_led_backside.jpg">
+</p>
+<h1 id="header-1">Generate configuration file using Hypercon</h1>
+<p>
+  Download Hypercon which is a GUI tool to generate Hypeion Config file. Hyperion config file tells arduino which LEDs correspond to which part of of screen and their relative positions. Hypercon makes it very easy and intuitive to generate a config file for your configuration.
+  <ol>
+    <li>Download the HyperCon JAR from <a href="https://hyperion-project.org/wiki/HyperCon-Information">here</a></li>
+    <li>Open it and insert the Output Port correctly. The port name can be easily found out from arduino IDE (tools->port)</li>
+    <li>Select device type as AdaLight</li>
+    <li>Enter Baud rate similar to one entered in Arduino sketch (115,200 works and Mac OS doesn't allow custom Baud rates)</li>
+    <li>Fill up the construction section according to how you've applied the LEDs. Choose the Direction and First LED offset such that they correspond to the direction you've applied</li>
+    <li>Enter the horizontal and vertical LEDs and dont forget to fill the Bottom gap</li>
+    <li>If you've folded the strip at corners like me select the LED checkboxes at the top</li>
+    <li>I haven't messed with the other parameters but I found that these defaults work very well</li>
+    <li>Save this file as a config file by clicking the Create Hyperion Configuration button and save the file somewhere</li>
+  </ol>
+  For reference my HyperCon config looks something like this <img src="../images/hypercon_config.png">
+</p>
+<h1 id="header-1">Run the Ambilight!</h1>
+<p>
+  Now since everything is setup we should be able to run our ambilight. Start the hyperion daemon with the configuration file we have generated using this command
+  <div class="language-bash highlighter-rouge"><code>hyperiond &lt;location-of-config-file&gt; </code></div>
+  This should make your ambilight light up and match the screen. If you face some issues check the port you have given in configuration file. 
 
-
+</p>
+<h1 id="header-1">References</h1>
+This post is heavily inspired by <a href="https://ai.rs/reviews/rgb-delight-raspberry-pi2-arduino-nano-ws2812b-using-hyperion-on-openelec/">this</a> blog which uses raspberrypi to accomplish the same task. Do give it a look if you want in detail treatment of this whole project. I've kept this mostly simple and easy to implement. For more information feel free to contact me at my <a href="mailto: bagdeabhishek@gmail.com">email</a>.
 
 	</section>
 </div>
