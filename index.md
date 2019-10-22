@@ -1,15 +1,8 @@
 ---
 layout: default
+title: Home
 ---
-<!-- Global site tag (gtag.js) - Google Analytics -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=UA-102910686-2"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
 
-  gtag('config', 'UA-102910686-2');
-</script>
 
  <img src="../images/profile_pic.jpg" width="50%" height="50%" align="right" /> 
 
