@@ -10,7 +10,8 @@ title: Home
 I am an energetic and outgoing person who loves to interact with people. I love to trek and cycle and generally enjoy company. Below is a short bio of me. 
 
 ## Professional and Educational Background
-I'm working currently with Salesforce as an Associate Member of Technical Staff with the Industries Surveys team.
+
+I'm working currently with Salesforce as an Associate Member of Technical Staff with the Industries Surveys team. You can find my current CV [here](../pdfs/resume.pdf)
 
 I completed my Masters' in Computer Science and Engineering from Indian Institute of Technology, Bombay in 2019. Before that I completed my Bachelors in Engineering from Jawaharlal Nehru Engineering College in Aurangabad, Maharashtra. I have completed my schooling from Holy Cross English High School, Aurangabad.
 
