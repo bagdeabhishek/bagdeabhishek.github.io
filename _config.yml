@@ -16,19 +16,34 @@
 title: Abhishek Bagade's blog
 email: bagdeabhishek@gmail.com
 description: >- # this means to ignore newlines until "baseurl:"
-  This is my blog on which I try to maintain my hobby projects and other stuff.
+  This is Abhishek Bagade's blog on which I try to maintain my hobby projects and other stuff. I try to add blogs related to GATE, Arduino Projects and general ML side projects. 
 baseurl: "" # the subpath of your site, e.g. /blog
 url: "https://bagdeabhishek.github.io" # the base hostname & protocol for your site, e.g. http://example.com
 twitter_username: bagdeabizek
 github_username:  bagdeabhishek
 google_analytics: [UA-102910686-2]
+facebook:
+  app_id: 2503151523291173
+  publisher: "https://www.facebook.com/bagdeabhishek"
+  admins: "https://www.facebook.com/bagdeabhishek"
+twitter:
+  username: bagdeabizek
+  card: summary
+social:
+  name: Abhishek Bagade
+  links:
+    - https://twitter.com/bagdeabizek
+    - https://www.facebook.com/bagdeabhishek
+    - https://www.linkedin.com/in/bagdeabhishek
+    - https://github.com/bagdeabhishek
+    - https://www.goodreads.com/bagdeabhishek
 # Build settings
 markdown: kramdown
 theme: jekyll-theme-hacker
 plugins:
   - jekyll-feed
   - jekyll-sitemap
-
+  - jekyll-seo-tag
 # Exclude from processing.
 # The following items will not be processed, by default. Create a custom list
 # to override the default setting.
