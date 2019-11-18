@@ -44,4 +44,38 @@ This is a very cool side project I did. This project fits your monitor with LED 
 
 <div align="center"> <iframe width="560" height="315" src="https://www.youtube.com/embed/DI81c2mnmzU" frameborder="0" allow="accelerometer; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>
 
+* [A plant only aquarium in a bottle! ](../jarrarium)
+I saw this on reddit, and decided to give it a go. This looks hella cool and should be a fun hobby.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
