@@ -25,7 +25,7 @@ Since this was a completely water based system most of the supplies were sourced
 #Procedure
 The procedure in this case is quite simple and I mostly hacked together this solution after looking over some youtube videos, blog posts and the incredibly useful ebook which I have added in resources. 
 1. Get the substrate ready. The substrate varies and the best option is getting some live soil from a nearby pond. I plan to this soon but for now I got the aquarium substrate mentioned above. You basically rinse the substrate and put it in the bottle using a funnel (or do some jugaad and make it out of paper like I did)
-<img src="../images/jarrarium-plants.jpg" width="25%" height="25%" align="center" />
+<img src="../images/jarrarium-funnel.jpg" width="25%" height="25%" align="center" />
 2. Prepare the pebbles by washing them in a bucket. Before you add pebbles using funnel plant the plants which need to be rooted in a substrate. Once the plants are embedded add the pebbles.
 <img src="../images/jarrarium-withoutwater.jpg" width="25%" height="25%" align="center" />
 3. Finally add water slowly using a funnel, taking care so that you don't disturb the substrate. Once you add water add the floating plants and you should be done. You can also add any invertebrates like shrimp, snail etc. after you add water. 
