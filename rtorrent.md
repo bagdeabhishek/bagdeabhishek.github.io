@@ -3,7 +3,7 @@ layout: default
 title: rtorrent
 permalink: /rtorrent/
 ---
-I got started with my own HomeLab recently and I wanted to host a torrenting client which had a web GUI. I searched over internet and rtorrent with Flood GUI seemed to be the best option. The existing blogs were helpful but had a lot of additional step which I felt weren't necessary. I referred mainly these 2 blog posts, (this)[https://blog.thirdechelon.org/2019/07/flood-ui-and-rtorrent-on-ubuntu-18-04-16-04/] one which created one additional user for rtorrent and FloodUI and (this)[https://medium.com/@typhon0/install-rtorrent-with-flood-on-ubuntu-server-17-04-3753555a8a62] creates two separate users, one for rtorrent and one for FloodUI. I more or less followed these instructions with some tweaks.
+I got started with my own HomeLab recently and I wanted to host a torrenting client which had a web GUI. I searched over internet and rtorrent with Flood GUI seemed to be the best option. The existing blogs were helpful but had a lot of additional step which I felt weren't necessary. I referred mainly these 2 blog posts, [this](https://blog.thirdechelon.org/2019/07/flood-ui-and-rtorrent-on-ubuntu-18-04-16-04/) one which created one additional user for rtorrent and FloodUI and [this](https://medium.com/@typhon0/install-rtorrent-with-flood-on-ubuntu-server-17-04-3753555a8a62) creates two separate users, one for rtorrent and one for FloodUI. I more or less followed these instructions with some tweaks.
 
 # Installing and configuring rtorrent
 We use rtorrent as the main torrenting client which will handle all the heavylifting, i.e downloading and tracking torrents. If you are using Ubuntu, installing it is pretty straight forward.
@@ -50,7 +50,6 @@ WorkingDirectory=%h
 WantedBy=default.target
 ```
 This file defines the rtorrent service which we are going to enable. Run the following commands to check this service
-
 ```bash
 sudo systemctl start rtorrent.service
 ```
