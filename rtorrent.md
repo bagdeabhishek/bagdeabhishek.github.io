@@ -65,3 +65,5 @@ sudo systemctl enable rtorrent.service
 Our base system is ready to go with rtorrent all configured and set up. Now we proceed with installing and configuring the front end.
 
 #Installing and configuring flood UI
+
+Remember about setting base URI for proxy pass

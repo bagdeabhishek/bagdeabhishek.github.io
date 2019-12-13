@@ -69,7 +69,7 @@ I wanted to go with Linux that was fixed but choosing an appropriate distro is t
 ### Linux OS and Choosing Distro
 After choosing the OS distro, next task was choosing the flavour of Ubuntu. I wanted a GUI for the server should the need arise in the future hence Ubuntu Server was out. I also wanted the UI to have minimal memory footprint, Ubuntu with Gnome generally occupies 1GB of main memory in idle state. I faced a similar problem when I was runnning my old laptop based system and I found out that Ubuntu with LXDE works very well while providing a minimal functional UI. The idle ram footprint of Ubuntu with LXDE was about 300MB which was very close to what I wanted. Instead of going with ubuntu and adding lXDE afterwards, I decided to go with Lubuntu which is comes with LXDE as the default display manager. I choose the Long Term Support version (LTS 18.04) for stability.
 
-###Partitioning Scheme
+### Partitioning Scheme
 I've been burned pretty badly in the past because I decided to install my OS in a single OS partition. I went with simple partitoning scheme with the SSD being divided into 2 partitions 
 
 * Root partition (/) 40GB
@@ -87,19 +87,92 @@ I wanted to install basic services for local media consupmtion and storage, ad-b
 ### Torrenting
 Since I've brought a 2k monitor the flaws of online streaming become immediately apparent. I wanted high quality media readily accessible and streamed from my local network. Since this service was going to be accessed by multiple users (my roommates) I wanted the process to easy to use and hence I wanted a GUI which would be accessible over a browser. The most popular option over the internet seemed to be [rtorrent](https://github.com/rakshasa/rtorrent) and [FloodUI](https://github.com/Flood-UI/flood). I go over on how to setup these services in a separate blog post [here](./rtorrent.md).
 
+If you are planning to run a proxy server which does proxy passing you have to set up the baseURI parameter in config.js file inside flood folder. 
+
 ### Ad Blocking
 Client based ad blocking works great for the most part. I generally use UBlock Origin on all my browsers (mostly firefox), for phones I used to use [Youtube Vanced](https://www.xda-developers.com/youtube-vanced-apk/) for blocking ads on youtube, with the advantage of PIP and for device wide ad blocking I used [Blokada](https://blokada.org/index.html) when I was using Android as my daily driver. All that changed when I joined Salesforce, I was handed an IPhone with no way to block ads on youtube or any app. The only solution in this case is network level ad blocking which in principle works by blocking DNS queries to blacklisted sites.
 
 I decided to use [Pi-hole](https://pi-hole.net/) for network level blocking which works great out of the box and better yet comes with the option of using it as an docker image. It blocks most of the ads on websites as well as video ad's on websites such as Youtube. This solved my problem of Youtube ads on IOS device and in conjunction with client based ad blocking solutions gives an excellent ad-free network. One of additonal advantages was local DNS caching which increases the speed with websites render and in general enhances your browsing experience.
 
----Explain the problem of changing the admin port form 80 to 8080  
+One problem is the Pihole admin panel runs on port 80 which will cause problems if you run a proxy server or a normal web server which runs over port 80. There are multiple ways to handle this like changing the port of lighttpd but since we are using a dockerized build we just change the port mapping of the container to something else. I used [docker-compose](https://docs.docker.com/compose/) to configure the docker installation. Below is the docker-compose file I used
+```bash
+version: "3"
+
+# More info at https://github.com/pi-hole/docker-pi-hole/ and https://docs.pi-hole.net/
+services:
+  pihole:
+    container_name: pihole
+    image: pihole/pihole:latest
+    extra_hosts:
+      - "headless.nick:192.168.1.2" # for dns mapping if you want to do some basic DNS routing 
+    ports:
+      - "53:53/tcp"
+      - "53:53/udp"
+      - "67:67/udp"
+      - "8080:80/tcp" # For remapping the HTTP port, so that nginx can run
+      - "8443:443/tcp" # Remapping the HTTPS port
+    environment:
+      TZ: 'India/Kolkata'
+      WEBPASSWORD: 'hodor'
+    # Volumes store your data between container upgrades
+    volumes:
+      - './etc-pihole/:/etc/pihole/'
+      - './etc-dnsmasq.d/:/etc/dnsmasq.d/'
+    dns:
+      - 127.0.0.1
+      - 1.1.1.1
+    # Recommended but not required (DHCP needs NET_ADMIN)
+    #   https://github.com/pi-hole/docker-pi-hole#note-on-capabilities
+    cap_add:
+      - NET_ADMIN
+    restart: unless-stopped
+```
+One of the issues I faced was the WEB_PORT environment variable, setting it didn't work for me so I had the remap ports. Also, You can do some very basic DNS routing using the extra_hosts parameter. You can put this up in file called docker-compose and run 
+``` bash
+docker-compose up
+``` 
+command to get this running. 
 
 ### Media Server
---TODO---
-###Cockpit 
----TODO---
-###Reverse Proxy
---- Separate blog post
-###Sonarr and something
-### Crawlers for tweets 
-### Nextcloud
+I wanted to setup a homeserver softweare for consuming all the media files I've downloaded. I wanted to go with Plex as it is one of the most popular choice but my aim was to use the server internally only and Plexs' use case primarily streaming over internet. I decided to go with [emby](https://emby.media/). The UI is clean and it's very easy to setup. Login and setup a library using the web GUI and you're all set. I just setup a library on my Emby instance with the download folder of my torrent service and I was set.
+### Cockpit 
+I wanted to setup some utility which'll help me manage my server remotely, since I wanted this server to be headless. [Cockpit](https://cockpit-project.org/) is a very lightweight utility which'll help you in managing servers. The installation is quite simple and you have to basically run 
+```bash
+sudo apt-get install cockpit
+```
+to get started.
+### Reverse Proxy
+Accessing these services becomes very tough as you have to access them using port numbers which aren't easy to remember. I wanted to setup a reverse proxy which will make this process easier. Configuring reverse proxy can be done either by using Apache or Nginx as server, I choose Nginx mainly based on the reviews I have heard and in general familiarity because i've worked with nginx in the past. Setting up nginx is pretty simple to be honest. You just have to run
+```bash
+sudo apt-get install ngninx
+```
+to install server and then edit the configuration file at /etc/nginx/sites-available which is named default (the correct way is to create a new file and symlink it in the /etx/nginx/sites-enabled directory) and a bunch of proxypasses. Add simple location blocks in the server block like
+```bash
+server {
+        listen 80 default_server;
+        listen [::]:80 default_server;
+        root /var/www/html;
+
+        index index.html index.htm index.nginx-debian.html;
+
+        server_name headless.nick;
+
+        location / {
+                try_files $uri $uri/ =404;
+        }
+
+        location /torrent/{
+                proxy_set_header Host $host:$server_port;
+                proxy_redirect off;
+                proxy_pass http://127.0.0.1:3000/;
+        }
+}
+``` 
+
+add as many location blocks as you have services and you can access them by the Domain name you have mentioned in the DNS server(Pi-Hole in my case) and add the suffix at last.
+so going by my configuration I can access the torrenting service as at headless.nick/torrent/
+
+This is blog entry is supposed be sort of running journal for my homelab and I'll keep updating it as I add more services. 
+
+
+
