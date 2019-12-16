@@ -176,7 +176,7 @@ add as many location blocks as you have services and you can access them by the 
 so going by my configuration I can access the torrenting service as at headless.nick/torrent/
 
 ### Remote Desktop
-Since this was a headless system I needed a remote desktop server and client to access the desktoip over network. I've in the past setup services like TigerVNC but they take a lot of work and hard to setup and get working. I've used Nomachine in the past and it simply works. You don't have to configure a whole lot of services to get this working. Just install it from the official website and you are ready to go. 
+Since this was a headless system I needed a remote desktop server and client to access the desktop over network. I've in the past setup services like TigerVNC but they take a lot of work and hard to setup and get working. NoMachine on the other hand simply works. You don't have to configure a whole lot of services to get this working. Just install it from the official website and you are ready to go. 
 
 This is blog entry is supposed be sort of running journal for my homelab and I'll keep updating it as I add more services. 
 
