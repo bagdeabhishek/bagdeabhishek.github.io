@@ -179,6 +179,8 @@ so going by my configuration I can access the torrenting service as at headless.
 Since this was a headless system I needed a remote desktop server and client to access the desktop over the network. I've in the past setup services like TigerVNC but they take a lot of work and hard to set up and get working. NoMachine on the other hand simply works. You don't have to configure a whole lot of services to get this working. Just install it from the official website and you are ready to go. 
 
 ### Jupyter Lab
+I've also added a jupyter lab service which runs jupyter lab 24\*7. This is so that I can run quick scripts in an Ipython notebook. I also plan to add a decent GPU to my lab so that I can tarin a model on the it. 
+
 
 This is blog entry is supposed to be sort of running journal for my homelab and I'll keep updating it as I add more services. 
 
