@@ -181,6 +181,37 @@ Since this was a headless system I needed a remote desktop server and client to 
 ### Jupyter Lab
 I've also added a jupyter lab service which runs jupyter lab 24\*7. This is so that I can run quick scripts in an Ipython notebook. I also plan to add a decent GPU to my lab so that I can tarin a model on the it. 
 
+### FTP service
+If you are hosting torrents on homelab you need an easy way to access these downloaded torrents. Emby takes care of media files but transferring other files like applications and photos becomes a major PITA. Setting up FTP allows you to quickly download these files over network using a web browser or a file explorer. I used vsftpd on Linux to quickly setup a FTP server which allowed anonymous access. I faced some issues while I was enabling anonymous internet access, the problem was file permissions (it always is). I managed to solve it by creating an FTP directory in /var/ directory and using _bind mount_. You can mount the directory which you want to enable over ftp using the following commands
+```bash
+sudo apt-get install vsftpd; # For installing vsftpd service
+mkdir /var/ftp;
+mkdir /var/ftp/storage;
+sudo mount --bind /downloads/torrent/folder /var/ftp/storage; # replace the first argument with your torrent download folder path 
+
+``` 
+
+Now open the file /etc/vsftpd.conf using a text editor of your choice and paste the following content
+
+```bash 
+listen=YES
+local_enable=NO
+anonymous_enable=YES
+write_enable=NO
+anon_root=/var/ftp
+anon_max_rate=2048000
+xferlog_enable=YES
+listen_address=192.168.1.2
+listen_port=21
+```
+
+Note that I've added a minimal configuration file which should just work, the default configuration file has a lot of directives which you can explore in depth. 
+
+Once you've saved the file just restart the vsftpd service using the below command and you should be able to see the contents at ftp://servers-ip-address
+
+```bash 
+sudo service vsftpd restart
+```
 
 This is blog entry is supposed to be sort of running journal for my homelab and I'll keep updating it as I add more services. 
 
