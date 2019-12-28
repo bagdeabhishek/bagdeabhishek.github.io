@@ -47,6 +47,8 @@ This is a very cool side project I did. This project fits your monitor with LED 
 * [A plant only aquarium in a bottle! ](../jarrarium)
 I saw this on reddit, and decided to give it a go. This looks hella cool and should be a fun hobby.
 
+* [Create your own Home Server (or as people at reddit call it, HomeLab)](../homelab)
+I always wanted to have my own HomeServer for a number of reasons and I finally managed to create one for cheap. This blog post goes over the decisions, both software and Hardware, I had to make and the reasons behind them. Follow this blog post to get started with a HomeLab of your own. 
 
 
 
