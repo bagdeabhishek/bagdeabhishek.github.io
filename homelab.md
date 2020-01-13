@@ -212,6 +212,17 @@ Once you've saved the file just restart the vsftpd service using the below comma
 ```bash 
 sudo service vsftpd restart
 ```
+### Youtube-dl
+I maintain a palylist of all the songs I like on youtube, sometime down the line I noticed many of the videos were taken down due to a copyright strike. Youtube makes it really hard to get the title of songs taken down and I was really pissed that I lost some songs in my collection. I decided to download these videos and host them on my home server, I alrady had emby setup so I could play them directly using the service. 
+I was very interested in hosting youtube-dl on my own server when I came across it long time back on reddit. Setting it up is very simple, you can run jest the below commands to install it on your linux based system
+```bash
+sudo curl -L https://yt-dl.org/downloads/latest/youtube-dl -o /usr/local/bin/youtube-dl
+sudo chmod a+rx /usr/local/bin/youtube-dl
+```
+
+The main challenge is setting up sane defaults for it to ensure that you download the highest quality videos and audio. My requirement was pretty simple, I wanted to download the highest quality videos possible and additionally I wanted to extract the audio from these videos for listening offline. I managed to do that by creating a configuration file at /etc/youtube-dl.conf and adding the following options. 
+
+
 
 This is blog entry is supposed to be sort of running journal for my homelab and I'll keep updating it as I add more services. 
 
