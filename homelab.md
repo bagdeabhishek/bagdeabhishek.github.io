@@ -223,6 +223,66 @@ sudo chmod a+rx /usr/local/bin/youtube-dl
 
 The main challenge is setting up sane defaults for it to ensure that you download the highest quality videos and audio. My requirement was pretty simple, I wanted to download the highest quality videos possible and additionally I wanted to extract the audio from these videos for listening offline. I managed to do that by creating a configuration file at /etc/youtube-dl.conf and adding the following options. 
 
+# Update (14/02/2020)
+I've been trying to build something of my own which can adequately saturate my homelab resources. I was working on a multi-threaded twitter crawler in my masters and wanted to do a fun project which would scale well. I tidied up the code and write it in a more modular fashion. I deployed it on my homelab and the TweetCrawler crawled about 50 Million tweets in a span of 5 days. I pushed these tweets into a postgres database, which was accessible over local network. You can check out the crawler at [this repository](https://github.com/bagdeabhishek/TweetCrawlMultiThreaded). 
+
+##Hardware Upgrades
+
+###Memory Upgrade
+The main challenges came up when processing these tweets, the memory I had on the system(8 GB) was not enough to load this data in memory and process it. I searched for cheap upgrades and since RAM sticks don't degrade much, I decided to buy second hand. The DDR3 RAM modules are easy to buy on the cheap since all new processors are using the DDR4 modules. I brought 8GB\*3 Corsair Vengeance RAM sticks from the same Facebook group to get a total of 32GB of main memory which is the maximum my processor and motherboard can handle. I got the RAM sticks for roughly 5900 INR which was cheap considering the retail prices. 
+You also need to work with the BIOS settings to ensure that your memory modules are working on the highest frequency they are rated for.
+
+###Heating issues
+I was checking out the logs and I noticed my SSD was throwing out SMART errors because of high temperatures. I just opened my system and the airflow situation is abysmal, to say the least as I didn't add any case fans. It's clear that I need to add case fans but for now, I've opened my case and added laptop cooler on top for additional airflow. 
+
+
+##Services
+I also wanted something to better search and organize this dataset but using a relational database for this purpose is plain stupid. I installed the following services to better explore this data. 
+###Elastic Search 
+I used Elastic search to search and query the tweets crawled. Elasticsearch comes as a tarball and that means to make the service on boot you have to write your systemd service. It's pretty easy and you can check out my configuration file for reference 
+```bash 
+[Unit]
+Description=ElasticSearchService
+
+[Service]
+Type=forking
+WorkingDirectory=/media/universe/elasticsearch/elasticsearch-7.5.2/bin/
+ExecStart=/home/abhishek/universe/elasticsearch/elasticsearch-7.5.2/bin/elasticsearch -d -p pid
+PIDFile=/media/universe/elasticsearch/elasticsearch-7.5.2/pid
+StandardOutput=file:/var/log/elastic.log
+StandardError=file:/var/log/elastic.log
+SyslogIdentifier=elasticsearch
+User=abhishek
+
+[Install]
+WantedBy=multi-user.target
+```
+just enable this service using the following command and it will run on every boot
+```bash
+sudo service elastic enable
+```
+
+###Kibana
+Elastic search by itself is not pretty to work with. To effectively use and query the Elastic search index I used Kibana. Kibana provides a nice web GUI to use and it's pretty easy to deploy. Reverse proxying Kibana takes some effort and just using the below setting should suffice. The information is available on the internet but it's hard to get it working.
+```bash
+server {
+        listen 80;
+        server_name kibana.headless.nick;
+        error_log   /var/log/nginx/kibana.error.log;
+        access_log  /var/log/nginx/kibana.access.log;
+        location / {
+                rewrite ^/(.*) /$1 break;
+                proxy_ignore_client_abort on;
+                proxy_pass http://localhost:5601;
+                proxy_set_header  X-Real-IP  $remote_addr;
+                proxy_set_header  X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header  Host $http_host;
+                proxy_read_timeout 6m;
+                }
+}
+```
+###Apache Spark
+This is almost a given at this point to work with amount of data I have. I'm in the process of installing it and though single node performance is not going to make much difference, I want to see the features offered and how I can use it. 
 
 
 This is blog entry is supposed to be sort of running journal for my homelab and I'll keep updating it as I add more services. 
