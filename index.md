@@ -50,6 +50,10 @@ I saw this on reddit, and decided to give it a go. This looks hella cool and sho
 * [Create your own Home Server (or as people at reddit call it, HomeLab)](../homelab)
 I always wanted to have my own HomeServer for a number of reasons and I finally managed to create one for cheap. This blog post goes over the decisions, both software and Hardware, I had to make and the reasons behind them. Follow this blog post to get started with a HomeLab of your own. 
 
+* [A network analysis of tweets from political handles](../twitterAnalysis)
+I did this as fun side project, I crawled tweets using [multi-threaded tweet crawler](https://github.com/bagdeabhishek/TweetCrawlMultiThreaded) (which I wrote). You can check out the interactive version of the network graph [here](../twitter_graph.html).
+In this project I created a social media influence graph using retweets and applied clustering to see how certain political communities behave. 
+
 
 
 
