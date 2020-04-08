@@ -256,9 +256,17 @@ This cluster again seems to support our assumption that this cluster is mostly A
 
 This cluster also seems very disorganised in the usage of hashtags. If you see the word cloud for cluster 0 almost all the words are of similar size which indicates that they are more or less equal in frequency. Comparing that to this cluster we see there are more hashtags which have high frequency and some hashtags with low frequency. The important thing here is the presence of multiple hashtags for the same event, this means that there is no concerted effort across the cluster to trend certain hashtags. One interesting analysis that can be explored is identifying known BJP leaders and analyzing the response of the community when the leader tweets a particular handle.  
 
-Next, we analyse these clusters based on time
+# Time based Analysis
+If you check the code in the below cell you'll notice I used ddata instead of dataframe. I used a library called dask to apply a counter function to the dataframe we have. The problem with apply() in normal pandas is that it isn't multithreaded and its' incredibly slow for large data frames. Dask divides the given dataframe into partitions and applies the function supplied in apply() call parallelly. You can check out dask [here](https://dask.org/) and it is one of the leading libraries in python to get your pandas code work efficiently in a multi-threaded scenario.
+
+What we do here is groupby date and in the following cells we groupby different time intervals. The aggregation function counts the number of tweets for a cluster for a time interval. We plot this using seaborn library.
 
 
+## Date
+We analyze the tweets based on Dates. The graph below plots number of tweets from each cluster over dates.
+1. The first cell here lays out the count of tweets for each cluster over dates and the peculiar aspect here is the graphs for all clusters start rising after 2016 mean the handles we have crawled were not as active before 2016 or majority of the handles contributing to our analysis were created after 2016. 
+2. The next cell we fine-tune our analysis to only after 2016 and analyse the data
+ 
 ```python
 def get_cluster_count(series):
     c = Counter()
@@ -300,18 +308,6 @@ plot_timeseries_data(res)
 
 ![png](twitterAnalysis_files/twitterAnalysis_12_1.png)
 
-
-If you check the above code you'll notice I used ddata instead of dataframe. I used a library called dask to apply a counter function to the dataframe we have. The problem with apply() in normal pandas is that it isn't multithreaded and its' incredibly slow for large data frames. Dask divides the given dataframe into partitions and applies the function supplied in apply() call parallelly. You can check out dask [here](https://dask.org/) and it is one of the leading libraries in python to get your pandas code work efficiently in a multi-threaded scenario.
-
-What we do here is groupby time, we do it by date in the previous cell and in the following cells we groupby different time intervals. The aggregation function counts the number of tweets for a cluster for a time interval. We plot this using seaborn library.
-
-# Analysis
-1. The first cell here lays out the count of tweets for each cluster over dates and the peculiar aspect here is the graphs for all clusters start rising after 2016 mean the handles we have crawled were not as active before 2016 or majority of the handles contributing to our analysis were created after 2016. 
-2. The next cell we fine-tune our analysis to only after 2016 and analyse the data
-
-
-
-
 ```python
 import datetime 
 plot_timeseries_data(res,datetime.date(year=2016,month=1,day=1))
@@ -320,7 +316,8 @@ plot_timeseries_data(res,datetime.date(year=2016,month=1,day=1))
         
 ![png](twitterAnalysis_files/twitterAnalysis_14_0.png)
 
-
+## Time of the day analysis
+In the next cell we analyse the number of tweets by time of day. Here we can see that all the clusters peak at particular time of day. We'll analyse this in detail afterwards. 
 
 ```python
 date_grouped_data = ddata.groupby(ddata.time.dt.time)
@@ -340,6 +337,8 @@ plot_timeseries_data(res,lineplot=True)
 
 ![png](twitterAnalysis_files/twitterAnalysis_15_1.png)
 
+## Day of the week analysis
+We analyse the number of tweets based on the day of week. 
 
 
 ```python
@@ -358,3 +357,4 @@ plot_timeseries_data(res,lineplot=True)
 
 ![png](twitterAnalysis_files/twitterAnalysis_16_1.png)
 
+ 
