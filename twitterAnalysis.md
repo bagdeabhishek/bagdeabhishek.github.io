@@ -68,7 +68,7 @@ Once you have the data the next step is visualizing the data. If you don't want 
 Once you are happy with the visualization generate it and export it in any format you want. Hot-tip you can use the plugin (Sigma.js Exporter plugin) which will generate a static browser-friendly interactive static. The visualization generated from data looks something like below. Here I've trimmed unnecessary data using filters in Gephi. To make the data visualization-friendly you can trim out small communities using partition count filter, you can also trim unimportant nodes from the graph. One way of doing that is removing nodes below a certain weighted degree but this disproportionately reduces nodes in smaller communities. A better way is to use EigenCentrality as a filtering metric, this solves the previous issue and gives a good looking graph. 
 **For an interactive version of the below image please visit this [link](../twitter_graph.html)**       
             
-![png](twitterAnalysis_files/networkfin.png)
+![png](twitterAnalysis_files/networkfin.jpg)
 
 
 # Using the data to extract relevant information
