@@ -94,8 +94,6 @@ df = pd.DataFrame(ls ,columns = ["handle","mentions","retweets","cluster","impor
 7. It is always faster to store this data frame using pickle. You can use the Pandas inbuilt function to_pickle.
 
 
-
-
 ```python
 from collections import Counter
 import string
@@ -106,7 +104,45 @@ import numpy as np
 from wordcloud import WordCloud
 import dask.dataframe as dd
 from dask.multiprocessing import get
+import networkx as nx
+import psycopg2
+import psycopg2.extras
 
+def pg_get_conn(database="fakenews", user="fakenews", password="fnd"):
+    """Get Postgres connection for fakenews
+
+    Returns:
+        Connection object : returns Post gres connection object
+
+    Args:
+        database (str, optional): Name of database
+        user (str, optional): Name of User
+        password (str, optional): Password of user
+    """
+    try:
+        conn = psycopg2.connect(database=database,
+                                user=user, password=password, host='localhost', port='5432')
+        return conn
+    except Exception as e:
+        print(str(e))
+        
+def run_query(query="""Select * from tweets_cleaned""", realDict = False):
+    print(query)
+    with pg_get_conn(database="abhishek",user="abhishek",password="vaishu") as conn:
+        cur = conn.cursor(cursor_factory = psycopg2.extras.RealDictCursor) if realDict else conn.cursor()
+        cur.execute(query)
+        ans = cur.fetchall()
+        return(ans)
+def create_graph(ls_tup):
+    G = nx.DiGraph()
+    for dc in ls_tup:
+        tfrom=dc['tweet_from']
+        rt = dc['retweeted_status_user_handle']
+        if G.has_edge(tfrom,rt):
+            G[tfrom][rt]['weight'] += 1
+        else:
+            G.add_edge(tfrom,rt,weight=1)
+    return(G)
 def __custom_words_accumulator(series,limit=None):
     c = Counter()
     for sentence in series:
@@ -144,7 +180,8 @@ def get_barcharts(df,column_name="retweets"):
         g.set_xticklabels(g.get_xticklabels(), rotation=50, horizontalalignment='right')
         i+=1    
 
-def plot_word_cloud(word_freq_dict,background_color="white", width=800, height=1000,max_words=300, figsize=(50, 50)):
+def plot_word_cloud(word_freq_dict,background_color="white", width=800, height=1000,max_words=300, 
+                    figsize=(50, 50), wc_only=False,color_map="viridis"):
     """
     Display the Word Cloud using Matplotlib
     :param word_freq_dict: Dictionary of word frequencies
@@ -153,7 +190,9 @@ def plot_word_cloud(word_freq_dict,background_color="white", width=800, height=1
     :rtype: None
     """
     word_cloud = WordCloud(background_color=background_color, width=width, height=height,
-                           max_words=max_words).generate_from_frequencies(frequencies=word_freq_dict)
+                           max_words=max_words,colormap=color_map).generate_from_frequencies(frequencies=word_freq_dict)
+    if wc_only:
+        return word_cloud
     plt.figure(figsize=figsize)
     plt.imshow(word_cloud, interpolation='bilinear')
     plt.axis("off")
@@ -164,8 +203,9 @@ Now that everything is setup we can begin with analysing the data we have. I've 
 With some data wrangling in python using Pandas, I've managed to plot the top 50 handles in each cluster and plot a bar chart. If you see the Image generated below you can see the clusters clearly correspond the users who speak or are interested in similar areas. 
 
 
+
 ```python
-df = pd.read_pickle("mention_retweet_hastags.pkl")
+df = pd.read_pickle("pickles/mention_retweet_hastags.pkl")
 get_barcharts(df,"mentions")
 ```
 
@@ -214,7 +254,16 @@ filtered_clusters = grouped_df.describe()['importance']
 sns.barplot(x=filtered_clusters.index,y='count',data=filtered_clusters)
 ```
 
+
+
+
+    <matplotlib.axes._subplots.AxesSubplot at 0x7f4fa746dc18>
+
+
+
+
 ![png](twitterAnalysis_files/twitterAnalysis_5_1.png)
+
 
 
 If we see the number of tweets from each cluster we can see that the cluster 0(which is mostly ProBJP cluster) is almost double the size of the cluster 1 (which has AAP and Congress supporters). The importance column here is the weighted degree from the network graph we constructed before, vaguely speaking it represents the importance of any node in the graph. If you check the mean importance both the cluster are pretty close. The 50% column here corresponds to the 50 percentile here which is the same as the median. The median values between these two clusters are also pretty close which when interpreted along with 75 percentile value tells us that these clusters have handles which are fairly similar in importance in the network graph. For contrast, if we see cluster 87, the 25, 50 and 75 percentile scores are very different from the first two clusters. This tells us that the cluster 87 has nodes which are not that important in the graph. 
@@ -242,6 +291,7 @@ Analyzing community from cluster 0 and the hashtags it becomes clear that this c
 Similarly, we can see the hashtags used in cluster 1 using WordCloud below
 
 
+
 ```python
 wc_dict = pd.DataFrame(hashtags_df[1],columns=["handle","freq"])
 dct = wc_dict.set_index("handle").to_dict()['freq']
@@ -266,7 +316,8 @@ What we do here is groupby date and in the following cells we groupby different 
 We analyze the tweets based on Dates. The graph below plots number of tweets from each cluster over dates.
 1. The first cell here lays out the count of tweets for each cluster over dates and the peculiar aspect here is the graphs for all clusters start rising after 2016 mean the handles we have crawled were not as active before 2016 or majority of the handles contributing to our analysis were created after 2016. 
 2. The next cell we fine-tune our analysis to only after 2016 and analyse the data
- 
+
+
 ```python
 def get_cluster_count(series):
     c = Counter()
@@ -285,7 +336,7 @@ def plot_timeseries_data(res, cut_off_date_start=None, cut_off_date_end=None, li
 
         
     
-df = pd.read_pickle("mention_retweet_hastags_timeobj.pkl")
+df = pd.read_pickle("pickles/mention_retweet_hastags_timeobj.pkl")
 df = df[df.cluster.isin([0,1,87])]
 ddata = dd.from_pandas(df,npartitions=12)
 date_grouped_data = ddata.groupby(ddata.time.dt.date)
@@ -308,16 +359,20 @@ plot_timeseries_data(res)
 
 ![png](twitterAnalysis_files/twitterAnalysis_12_1.png)
 
+
+
 ```python
 import datetime 
 plot_timeseries_data(res,datetime.date(year=2016,month=1,day=1))
 ```
 
-        
-![png](twitterAnalysis_files/twitterAnalysis_14_0.png)
+
+![png](twitterAnalysis_files/twitterAnalysis_13_0.png)
+
 
 ## Time of the day analysis
 In the next cell we analyse the number of tweets by time of day. Here we can see that all the clusters peak at particular time of day. We'll analyse this in detail afterwards. 
+
 
 ```python
 date_grouped_data = ddata.groupby(ddata.time.dt.time)
@@ -337,6 +392,7 @@ plot_timeseries_data(res,lineplot=True)
 
 ![png](twitterAnalysis_files/twitterAnalysis_15_1.png)
 
+
 ## Day of the week analysis
 We analyse the number of tweets based on the day of week. 
 
@@ -355,6 +411,146 @@ plot_timeseries_data(res,lineplot=True)
 
 
 
-![png](twitterAnalysis_files/twitterAnalysis_16_1.png)
+![png](twitterAnalysis_files/twitterAnalysis_17_1.png)
 
- 
+
+# Hyperlink Analysis
+Once we get the data out of database we now analyse the links posted by users from each cluster. Following cell takes care of data cleaning and preprocessing. 
+1. We split the url to only get the hostname of the website and discard the empty urls.
+2. We remove commonly used links which are irrelevant like facebook, instagram, youtube etc. 
+3. We count the occurances of each website and return a dictionary object.
+
+
+
+```python
+exclude_list = [
+    'twitter.com',
+    'bit.ly',
+    'www.facebook.com',
+    'youtu.be',
+    'www.instagram.com',
+    'www.youtube.com',
+    'goo.gl',
+    'fb.me',
+    'ow.ly',
+    'fllwrs.com}\n',
+    'www.amazon.com',
+    'instagram.com',
+    'www.pscp.tv'
+]
+def get_links_dct(file,topk=None):
+    links=[]
+    with open(file) as f:
+        for row in f:
+            if row != '{}\n':
+                links.append(row.split('/')[2].strip().replace('}',''))
+    c = Counter(links)
+    dct = dict(c.most_common(topk)) if topk else dict(c.most_common())
+    for x in exclude_list:
+        dct.pop(x,None)
+    return(dct)
+def plot_wc_subplots(cluster0,cluster1,fig_size=(50,50)):
+    wc0 = plot_word_cloud(cluster0,wc_only=True,width=800,color_map="autumn")
+    wc1= plot_word_cloud(cluster1,wc_only=True,width=800,color_map="winter")
+    fig = plt.figure(figsize=fig_size)
+    fig.subplots_adjust(wspace=0)
+    s1 = fig.add_subplot(121)
+    s1.axis("off")
+    s1.imshow(wc0,aspect='auto')
+    s2 = fig.add_subplot(122)
+    s2.axis("off")
+    s2.imshow(wc1,aspect='auto')
+    fig.show()
+cluster0 = get_links_dct('pickles/cluster0.link')
+cluster1 = get_links_dct('pickles/cluster1.link')
+plot_wc_subplots(cluster0,cluster1,fig_size=(50,25))
+```
+
+
+![png](twitterAnalysis_files/twitterAnalysis_19_0.png)
+
+
+In the previous cell we visualized the links from each cluster in the form of word clouds. We plot them side, cluster0(Pro-BJP) is plotted on the left side whereas the wordcloud on the right side is of the cluster1(Anti-BJP). Some observations after seeing the clusters
+1. Top sites like indianexpress.com are popular across both clusters. 
+2. www.pscp.tv is among the most popular websites in cluster0. People generally post live recordings of news channels on this platform. This site is mentioned 31927 times in cluster0 compared to 4279 times in cluster1. But comparing between these two numbers is impossible as the size of clusters is different. **Instead, We should instead compare the hosts by the percentage of links**
+3. To understand the clusters better we need to identify media sources which are exclusive to that cluster. What we can do is find out the intersection set of both the clusters, this set contains all the sites which are common to both the clusters. Then we do a set difference between the original cluster results and this intersection set to get the sites present only in a particular cluster. 
+
+
+```python
+common_links = set(cluster0).intersection(set(cluster1))
+for x in common_links:
+    cluster0.pop(x,None)
+    cluster1.pop(x,None)
+plot_wc_subplots(cluster0,cluster1,fig_size=(50,25))
+```
+
+
+![png](twitterAnalysis_files/twitterAnalysis_21_0.png)
+
+
+We can see that this approach pushes up less well known sites in both clusters. This approach has another problem though, since we take all the links present in both clusters it pushes up a lot of irrelevant sites into analysis. The other problem I can see is that this approach completely ignores relative ranking of sources within a cluster. For example, if a a site xyz.com occurs as the most frequent site in cluster A but it is say the 100th most frequent site in cluster B it's removed from both the clusters. This is problematic and doesn't work. 
+## New approach \#1
+Instead of removing the common elements completely we come up a different heuristic,
+1. For each cluster instead of raw counts we maintain proportion of the websites in the dictionary
+2. Construct an intersection set, taking only the top 100 websites in each cluster. This will take care of the problem where a site mentioned 1000's of times and only once in a particular cluster being end up in the intersection set. 
+3. Instead of removing all the elements in the intersection set completely we instead re-adjust the ratio of the website in a set by subtracting the ratio of the same website(which is in the interstion set) in other cluster.
+This returns much better result than the previous methods and since this only takes top 100 websites from each cluster we get more relevant results.
+
+
+```python
+cluster0 = get_links_dct('cluster0.link',100)
+cluster1 = get_links_dct('cluster1.link',100)
+def get_intersection_balanced_set(cluster0,cluster1):
+    common_set = set(cluster0).intersection(set(cluster1))
+    total = sum(cluster0.values())
+    cluster0 = {k: v / total for k, v in cluster0.items()}
+    total = sum(cluster1.values())
+    cluster1 = {k: v / total for k, v in cluster1.items()}
+    for x in common_set:
+        cluster0[x] = cluster0[x] - cluster1[x]
+        cluster1[x] = cluster1[x] - cluster0[x]
+        if cluster0[x] < 0.01:
+            cluster0.pop(x,None)
+        if cluster1[x] < 0.01:
+            cluster1.pop(x,None)
+    return cluster0, cluster1
+cluster0,cluster1 = get_intersection_balanced_set(cluster0,cluster1)
+plot_wc_subplots(cluster0,cluster1,fig_size=(50,25))
+```
+
+
+![png](twitterAnalysis_files/twitterAnalysis_23_0.png)
+
+
+## New Approach \#2
+I felt the above heuristic got rid of a lot of superflous websites and limiting the analysis to top 100 websites only would be restrictive. If you see the heuristic it already removes a lot of irrelevant sites by removing all the sites whose proportion in any given cluster is less than 0.01. In the next cell we remove the 100 site limit and run our heuristic again. 
+
+
+```python
+cluster0,cluster1 = get_intersection_balanced_set(get_links_dct('cluster0.link'),get_links_dct('cluster1.link'))
+plot_wc_subplots(cluster0,cluster1,fig_size=(50,25))
+```
+
+
+![png](twitterAnalysis_files/twitterAnalysis_25_0.png)
+
+
+# Tweet Analysis (In progress)
+In the next part we analyse the tweets sent out from users in both clusters.  
+This SQL commands pushes all the texts from our dataset into a text file so that we can train a language model with it. The main advantage of this command is this command runs server side so there isn't any time wasted on moving the data around. This is also more memory efficient since you don't hold the data in memory, this might become an issue if the table is very large like mine.
+```SQL
+    COPY (SELECT t.text from tweet_articles_tweepy t JOIN cluster_mapping c ON t.tweet_from = c.id where c.cluster = 0) TO '/media/universe/notebooks/cluster0.txt';
+    COPY (SELECT t.urls from tweet_articles_tweepy t JOIN cluster_mapping c ON t.tweet_from = c.id where c.cluster = 1) TO '/media/universe/notebooks/cluster1.link';
+```
+
+
+```python
+cluster0=[]
+with open('cluster0.txt') as f:
+    cluster0 = f.read().splitlines()
+new_ls=[]
+for x in cluster0:
+    if not x.startswith("RT"):
+        new_ls.append(x)
+len(new_ls)    
+```
