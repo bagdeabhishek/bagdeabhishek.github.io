@@ -54,7 +54,7 @@ I always wanted to have my own HomeServer for a number of reasons and I finally 
 I did this as fun side project, I crawled tweets using [multi-threaded tweet crawler](https://github.com/bagdeabhishek/TweetCrawlMultiThreaded) (which I wrote). You can check out the interactive version of the network graph [here](../twitter_graph.html).
 In this project I created a social media influence graph using retweets and applied clustering to see how certain political communities behave. 
 
-* [Run your dual boot linux installation as a VM](../dualbootasVM.md)
+* [Run your dual boot linux installation as a VM](../dualbootasVM)
 I did this because I was tired of having to switch between Windows and Linux installations. I have regular crawls and services set up which I needed to access across systems. I used my homelab to host these services before but since the COVID lockdown I have no access to my homelab. 
 
 

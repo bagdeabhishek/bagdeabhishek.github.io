@@ -25,7 +25,7 @@ The first step in this process is to activate Virtualization features from the B
 2. Click the checkbox near Hyper-V. Press OK and you should be done.
 3. Windows will restart once to enable this feature.
 
-![EnableHyperV](images\enableHV.PNG)
+![EnableHyperV](images/enableHV.PNG)
 
 ## Passing through the SSD to VM
 The next challenge here is to make sure the actual media (SSD in my case) is passed through without interference to the VM we create. You have to make sure Windows is not using this media and forwards it cleanly to our target VM. 
@@ -35,7 +35,7 @@ To make sure that the media we are passing to the new VM is not being used by th
 2. All your disks should appear at the bottom along with all the partitions in the bottom. 
 3. Go to the Linux media you want to forward (the drive which has Linux installed on it) and left-click on it. You'll get an option to make this device offline, click on it. Now the disk should be offline and the UI should be reflecting the change.
 
-![offlineHDD](images\offlineHDD.PNG)
+![offlineHDD](images/offlineHDD.PNG)
 
 ### Create a VM using HyperV
 Once you complete the above step, you need to create a VM using HyperV. Go to HyperV Manager and create a new VM. Create a new VM with all the necessary configurations like memory and CPU cores. While creating a new VM make sure that you select generation 2 (No specific reason just seems newer and better suited to me) in the Specify Generation section and in the Connect Virtual Hard disk section select the "Attach a Virtual Hard disk later" option. Once you do that your VM should be created. To mount our Linux media and make sure we can boot to it we need to do a device passthrough to the VM.
@@ -44,7 +44,7 @@ Once you complete the above step, you need to create a VM using HyperV. Go to Hy
 3. Mount any other disks if needed. 
 4. Download the SuperGrub 2 disk image from [here](https://www.supergrubdisk.org/super-grub2-disk/)
 5. In the DVD drive under the SCSI section select the recently downloaded ISO as an image file. 
-![VMHDDConfiguration](images\HDD.PNG)
+![VMHDDConfiguration](images/HDD.PNG)
 
 SuperGrub2 helps us to solve the issue of not finding the GRUB partition as we are booting in a VM. We use SuperGrub2 to boot into our Linux install.  
 
@@ -58,7 +58,7 @@ HyperV won't allow you to boot the created VM as the HyperV Manager cannot creat
 
 Once you are done with the above steps you can spin up the VM and you should be able to boot into the SuperGrub Menu. In this menu select the "Detect and show boot methods" entry.
 
-![superGrub](images\grub.PNG)
+![superGrub](imagesgrub.PNG)
 
 You should then be able to select your Linux version and be able to boot into it. 
 
@@ -86,4 +86,4 @@ Congratulations! you now have a Virtualized version of your Linux Installation w
 
 This method also won't work if your Linux install exists on the same Hard disk. I feel in that case just converting the whole partition to a VHDX file would be easier. This method has its own drawbacks like the data won't be consistent across both instances. 
 
-![finalresult](images\finishedproduct.PNG)
+![finalresult](images/finishedproduct.PNG)
