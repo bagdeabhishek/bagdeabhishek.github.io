@@ -58,7 +58,7 @@ HyperV won't allow you to boot the created VM as the HyperV Manager cannot creat
 
 Once you are done with the above steps you can spin up the VM and you should be able to boot into the SuperGrub Menu. In this menu select the "Detect and show boot methods" entry.
 
-![superGrub](imagesgrub.PNG)
+![superGrub](images/grub.PNG)
 
 You should then be able to select your Linux version and be able to boot into it. 
 
