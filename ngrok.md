@@ -105,9 +105,7 @@ I have created a simple bot that works well enough for our purpose. Clone [this]
 
 The bot should be running now and you can test it by typing `/url` in the telegram chat with the bot. You should get a response similar to the one below.
 
-<div align="center">
-    <img src="images/bot.jpg" alt="bot response" width="400"/>
-</div>
+![bot](images/bot.jpg)
 
 #### 3. Persist the bot operation using systemd
 Once the bot is running we can make it run at boot using systemd. We create a systemd service that will launch at boot. The process is the same as the one in making the Ngrok systemd service. I'll paste my systemd configuration here for reference
