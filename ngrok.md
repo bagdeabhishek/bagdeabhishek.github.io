@@ -13,7 +13,7 @@ There are many reasons for exposing services over the internet. One of the most 
 Exposing any incoming connections to your computer is almost always a bad idea. There is a high chance of it being compromised by attackers who are always on the lookout for vulnerable systems. This is also why many people place their servers behind cloud flare routing infrastructure. Exposing your personal server is worse because a skilled hacker might be able to infiltrate your home network without you even knowing.
 
 # The Easiest way (Paid)
-The easiest way to accomplish the above is getting a paid service which are very low maintenance. If you don't want to play around and want a reliable way to expose your service, getting a paid subscription isn't a bad idea. 
+The easiest way to accomplish the above is getting a paid service. If you don't want to play around and want a reliable way to expose your service, getting a paid subscription isn't a bad idea. 
 
 ## Ngrok (Paid version)
 Ngrok has various tiers and the cheapest one is for 5$/month. It comes with custom subdomains that will help you get a static URL to point your friends to. This is an easy to use option and relatively safe since you just expose the service over the internet. 
@@ -22,7 +22,7 @@ Ngrok has various tiers and the cheapest one is for 5$/month. It comes with cust
 You can allow incoming traffic to your server directly by enabling port forwarding and reserving a static IP from your ISP. This is generally not a problem on traditional ISPs, but new generation fibre plans like Jio fibre or airtel Fibre put you behind a NAT which complicates this. My understanding is ISPs like Jio fibre won't allow port forwarding but there are examples of people managing to do [this](https://broadbandforum.co/t/160941/page-4#post-1437388) (I doubt it though, the user is the only one who managed to do this on the forum). In that case, you may have to pay some additional charges to the ISPs.
 
 ## Reverse SSH tunnelling
-If you are not able to get a static IP the next best thing is reverse ssh tunnelling which uses ssh to login to a remote server with internet access and open a tunnel back to your system. This solution is genius in a way that you just need the public IP of the server which is exposed to the internet and the ssh command will take care of tunnelling. The drawback here is you need to have a server that acts as a proxy to relay back the internet traffic. I found two alternatives for this problem
+If you are not able to get a static IP the next best thing is reverse ssh tunnelling which uses ssh to login to a remote server with internet access and opens a tunnel back to your system. This solution is genius in the way that you just need the public IP of the server which is exposed to the internet and the ssh command will take care of tunnelling. The drawback here is you need to have a server that acts as a proxy to relay back the internet traffic. I found two alternatives for this problem
 
 ### Setup a free google cloud VM
 Google Cloud offers a free tier that you can use to get a VM with public IP. The free tier works well as we need the VM to just redirect the traffic. It has its own drawbacks though
@@ -47,7 +47,7 @@ These are the steps you need to follow to enable this system.
 ### Installing Ngrok
 Installing Ngrok is as easy as downloading the file and running it. You can download Ngrok from [here](https://ngrok.com/download) and follow the instructions to start running Ngrok directly. Since we want to run this as a service we will need to follow some extra steps.
 #### 1. Create a configuration file
-To avoid adding multiple command line arguments while running Ngrok we create a configuration file. The configuration file should be at `/home/user-name/.ngrok2/ngrok.yml`. You can edit it to specify the tunnels and the configuration needed. As an example, this is my configuration file 
+To avoid adding multiple command-line arguments while running Ngrok we create a configuration file. The configuration file should be at `/home/user-name/.ngrok2/ngrok.yml`. You can edit it to specify the tunnels and the configuration needed. As an example, this is my configuration file 
 
 ```yaml
 authtoken: <your-auth-token> # get this token once you register on ngrok.com
