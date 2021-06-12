@@ -146,7 +146,7 @@ I've included the code to push the changed ngrok URLs once the script is invoked
 Change the PATH_OF_GIT_REPO variable to point to your repo location on the system and you are set.
 
 ## Modify the systemd service to run the above script every time Ngrok restarts
-Once you do the above changes you'll also need to take care f the case when the ngrok service is restarted. To make sure our telegram_bot service restarts when ngrok service restarts include the following parameter in the unit section. 
+Once you do the above changes you'll also need to take care of the case when the ngrok service is restarted. To make sure our telegram_bot service restarts when ngrok service restarts include the following parameter in the unit section. 
 ```ini
 PartOf=ngrok.service
 ```
