@@ -130,26 +130,26 @@ Hopefully, now you should be able to get the URLs to your local service anywhere
 
 Since then I got a slightly better idea, why not dynamically redirect using github pages? We can update the URL to redirect to at every boot. 
 
-# URL redirects using github pages
-I've added additional functionality to setup redirects directly using github pages. This means you will have a fixed url which will then transparently redirect to the latest ngrok tunnel URL. 
+# URL redirects using Github pages
+I've added additional functionality to set up redirects directly using Github pages. This means you will have a fixed URL which will then transparently redirect to the latest ngrok tunnel URL.
 ## Setup JekyllRedirectFrom
-You can go with a simple HTTP or JS redirect using github pages but using JekyllRedirectFrom limits the amount of text you have to write. You'll need to enable JekyllRedirectFrom on github pages following the instructions mentioned [here](https://github.com/jekyll/jekyll-redirect-from). Once you do that you can setup redirect simply using following snippet. 
+You can go with a simple HTTP or JS redirect using GitHub pages but using JekyllRedirectFrom limits the amount of text you have to write. You'll need to enable JekyllRedirectFrom on Github pages following the instructions mentioned [here](https://github.com/jekyll/jekyll-redirect-from). Once you do that you can set up a redirect simply using the following snippet.
 ```md
 ---
 title: jellyfin 
 redirect_to: https://tunnel.in.ngrok.io
 ---
 ```
-## Push a commit with updated url at every boot
-I've included the code to push the changed ngrok urls once script is invoked. You can refer change_redirect_file method in bot-telegram.py file to understand how we push the changed urls. You'll also need to setup ssh keys for your github accounts, this will make it easier to push the commits without putting username passwrod everytime. Follow [this](https://docs.github.com/en/github/authenticating-to-github/connecting-to-github-with-ssh) guide to setup SSH keys and set the upstream branch to use ssh by running `git remote set-url origin git@github.com:<Username>/<Project>.git` command.
+## Push a commit with an updated URL at every boot
+I've included the code to push the changed ngrok URLs once the script is invoked. You can refer change_redirect_file method in bot-telegram.py file to understand how we push the changed URLs. You'll also need to set up ssh keys for your GitHub accounts, this will make it easier to push the commits without putting a username & password every time. Follow [this](https://docs.github.com/en/github/authenticating-to-github/connecting-to-github-with-ssh) guide to set up SSH keys and set the upstream branch to use ssh by running `git remote set-url origin git@github.com:<Username>/<Project>.git` command.
 
-Change the PATH_OF_GIT_REPO variable to point to your repo location on system and you are set.
+Change the PATH_OF_GIT_REPO variable to point to your repo location on the system and you are set.
 
-## Modify the systemd service to run the above script everytime ngrok restarts
-Once you do the above changes you'll also need to take care f the case when the ngrok service is restarted. To make sure our telegram_bot service restarts when ngrok service restarts include the following parameter in unit section. 
+## Modify the systemd service to run the above script every time Ngrok restarts
+Once you do the above changes you'll also need to take care f the case when the ngrok service is restarted. To make sure our telegram_bot service restarts when ngrok service restarts include the following parameter in the unit section. 
 ```ini
 PartOf=ngrok.service
 ```
 
 
-Once you do the above steps your friends can easily reach your service by visiting the your <github-pages-url>/tunnelname
+Once you do the above steps your friends can easily reach your service by visiting the URL http://github-user-name.github.io/tunnelname
