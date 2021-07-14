@@ -1,4 +1,4 @@
 ---
 title: tv-series-download 
-redirect_to: https://5da732a206af.in.ngrok.io
+redirect_to: https://35e57c17caae.in.ngrok.io
 ---
