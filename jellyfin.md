@@ -1,4 +1,4 @@
 ---
 title: jellyfin 
-redirect_to: https://b1c343a0d386.in.ngrok.io
+redirect_to: https://a661df4a0cdb.in.ngrok.io
 ---
