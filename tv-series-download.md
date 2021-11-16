@@ -1,4 +1,4 @@
 ---
 title: tv-series-download 
-redirect_to: https://bdb5-103-94-59-127.in.ngrok.io
+redirect_to: https://222b-103-94-59-45.in.ngrok.io
 ---
