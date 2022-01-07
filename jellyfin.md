@@ -1,4 +1,4 @@
 ---
 title: jellyfin 
-redirect_to: https://8242-103-94-59-99.in.ngrok.io
+redirect_to: https://0c60-103-94-59-74.in.ngrok.io
 ---
