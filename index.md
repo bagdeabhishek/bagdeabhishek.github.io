@@ -27,6 +27,8 @@ I love watching movies and I'm proud of the reviews I've written for movies I've
 ## Social Media links
 I mainly use [facebook](https://www.facebook.com/bagdeabhishek) for keeping up with friends, I rarely post any updates though. I update all the books i've read on [goodreads](https://www.goodreads.com/bagdeabhishek). I maintain professional acquaintance through my [linkedin](https://www.linkedin.com/in/bagdeabhishek/) profile. Anyone who wishes to get in touch can mail me on [bagdeabhishek@gmail.com](mailto:bagdeabhishek@gmail.com). I've also written some answers on [quora](https://www.quora.com/profile/Abhishek-Bagade)
 
+Ever since WFH has started I've been travelling and working from some nice locations in India. I've been encouraged by my friends to start documenting these travels. Since then I've been active on my [Instagram](https://www.instagram.com/bagdeabhishek/) (after 6 long years!) and also I've been posting some travelogues on [Youtube](https://www.youtube.com/c/AbhishekBagade)
+
 # GATE and M.Tech related stuff
 
 * [Life at IIT Bombay](https://www.mixcloud.com/careerhunt/life-at-iit-bombay-by-abhishek-bagade-and-ashish-mitole/)
