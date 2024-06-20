@@ -1,3 +1,8 @@
+---
+layout: default
+title: Fixing my 8 Year old speaker set
+permalink: /edifier_r1280t.md/
+---
 This is my first post after a long time. Life's been moving fast for the past 2 years, I got married, moved to 2 different cities and changed jobs. In between all this, I did a few small projects but didn't get a chance to document them. Thought would get back to writing since I did something which I was pretty proud of myself, Better late than never right?
 # My first set of HiFi speakers
 I always liked audiophile grade stuff like headphones, speakers, sound bars etc but I was just a student with very limited budget so I couldn't afford any of them. When I went for master's for the first time in my life I had access to a modest stipend, and after saving for 2 months I splurged on a pair of bookshelf speakers [Edifier R1280Ts](https://edifierindia.com/products/edifier-r1280dbs-active-bluetooth-bookshelf-speakers-brown). I got the basic version, without any  bluetooth (the link has 1280DBs which come with value add features like bluetooth, optical input and subwoofer out). As life went on they came with me to every place I stayed in, different hostels, different cities once I graduated (Aurangabad, Hyderabad, bangalore). These speakers went through a lot, they were not handled delicately to put it mildly. But, they held on without any complain and the sound quality was exactly how I liked it. The speakers are established as one of the nicer ones in the price range and I growed to love them dearly as time went on. There was a sentimental attachment as well since this was first nice thing I brought from my own money. 
