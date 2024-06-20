@@ -20,4 +20,24 @@ I told my sister, I'll save her 15k Rs and started searching for more informatio
 I started to look for more information on this problem since these are pretty popular set of speakers. If I had this problem definitely someone else might've run into same issues. I then saw [this](https://www.reddit.com/r/audiorepair/comments/13fqhv8/edifier_r1280_speakers_wont_power_up/) post on reddit and it was exactly what I needed! OP there pointed out to check the capacitor on the power board and see if it has gone bad. I started looking at the board and I stupidly looked at the amplifier board first, thinking OP was talking about capacitors on this board. Once I realised he wasn't talking about this board but the power supply board. 
 
 ## Unscrewing the power board
-Unscrewing the power board was a task in itself, I had to open both front and rear parts of the wooden housing. To make matters worse the PSU board was attached by a screw and bolt which was hard to lock down. I managed to use a drill socket from my bosch drill to hold it down and unscrewed it. Once it was out I could see the capacitor in question was very slightly bulged
+Unscrewing the power board was a task in itself, I had to open both front and rear parts of the wooden housing. To make matters worse the PSU board was attached by a screw and bolt which was hard to lock down. I managed to use a drill socket from my bosch drill to hold it down and unscrewed it. Once it was out I could see the capacitor in question was very slightly bulged. 
+
+## Found the culprit!
+I found the exact capacitor which the reddit thread talked about and lucky for me it looked slightly bulged. Lucky because it avoided my digging around with a multimeter to find the failing component. I de-soldered the capacitor and the capacitor had broken down completely, the terminals were corroded and it was barely held in place by the remaining terminal.
+
+
+# Finding replacement
+Finding replacement was not that heard I looked at the capacitor specification(68uf, 400V) and found an exact match at [ElectronicsComp](https://www.electronicscomp.com/68uf-400v-electrolytic-capacitor?gad_source=1&gclid=CjwKCAjwps-zBhAiEiwALwsVYeCJGdlaodnxbyzKY1dq8gBPEnt4XWcTT6lW3ejfETulxqFSHv8Z0hoCjCkQAvD_BwE). I placed an order and instead of delivering 400V capacitor they delivered capacitor with 450V rating. I read about it and turns out there are no disadvantages in going for a higher rated capacitor than required. 
+
+# Soldering it on
+Once everything was ready I plugged in my trusty old soldering gun and started my task. This took less than 5 mins since everything was pretty straightforward. You can see the pic of the board after soldering the capacitor below. 
+
+# It's Alive!
+Once everything was soldered I plugged in the cord to mains and it WORKED! the power LED immediately lit up and I was ecstatic!. Told my wife and sister what I did and they were pretty impressed. Finally assembled everything and played some of my choicest tunes and the speakers were flawless as before. I absolutely adore these set of speakers and would like to endorse them to anyone who's looking to upgrade. 
+
+# Maker's High
+The aim with this project was to get the speakers working because of sentimental reasons but fixing something with your bare hands gives you a different high. Especially given most of my work is in the software world, where the code/ideas/work are all abstract and stored as bytes somewhere. Some things I accomplished as part of this process
+* Saved a bunch of money: seriously I spent 32 INR on a capacitor vs ~10000 INR for a new set of speakers
+* Learnt about electronics: especically speakers are indestructible if they are of decent quality
+* Open things up to see whats wrong: If you are going to throw them away anyways whats the harm in opening them up? worst case scenario you mess them up even more. You were anyways going to throw them away right?
+* Makers High keeps the curiosity flowing in life: Fixing something invokes a sense of joy which is hard to describe. Feels immensely satisfying. 
