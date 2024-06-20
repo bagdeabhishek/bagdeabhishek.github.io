@@ -32,10 +32,12 @@ Unscrewing the power board was a task in itself, I had to open both front and re
 
 ## Found the culprit!
 I found the exact capacitor which the reddit thread talked about and lucky for me it looked slightly bulged. Lucky because it avoided my digging around with a multimeter to find the failing component. I de-soldered the capacitor and the capacitor had broken down completely, the terminals were corroded and it was barely held in place by the remaining terminal.
+
 <img src="../images/old_cap_bottom.jpeg" width="50%" height="50%" align="left"/><img src="../images/old_cap_top.jpeg" width="50%" height="50%" align="right"/>
 
 # Finding replacement
 Finding replacement was not that heard I looked at the capacitor specification(68uf, 400V) and found an exact match at [ElectronicsComp](https://www.electronicscomp.com/68uf-400v-electrolytic-capacitor?gad_source=1&gclid=CjwKCAjwps-zBhAiEiwALwsVYeCJGdlaodnxbyzKY1dq8gBPEnt4XWcTT6lW3ejfETulxqFSHv8Z0hoCjCkQAvD_BwE). I placed an order and instead of delivering 400V capacitor they delivered capacitor with 450V rating. I read about it and turns out there are no disadvantages in going for a higher rated capacitor than required. 
+
 <img src="../images/new_cap.jpeg" width="50%" height="50%" align="center"/>
 
 # Soldering it on
@@ -44,6 +46,7 @@ Once everything was ready I plugged in my trusty old soldering gun and started m
 
 # It's Alive!
 Once everything was soldered I plugged in the cord to mains and it WORKED! the power LED immediately lit up and I was ecstatic!. Told my wife and sister what I did and they were pretty impressed. Finally assembled everything and played some of my choicest tunes and the speakers were flawless as before. I absolutely adore these set of speakers and would like to endorse them to anyone who's looking to upgrade. 
+
 <img src="../images/board_fin_bottom.jpeg" width="50%" height="50%" align="left"/><img src="../images/board_fin_top.jpeg" width="50%" height="50%" align="right"/>
 
 
