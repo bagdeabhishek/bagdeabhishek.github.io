@@ -11,7 +11,7 @@ I am an energetic and outgoing person who loves to interact with people. I love 
 
 ## Professional and Educational Background
 
-I'm working currently with Salesforce as an Associate Member of Technical Staff with the Industries Surveys team. You can find my current CV [here](../pdfs/resume.pdf)
+I've worked previously with Salesforce as a Member of Technical Staff with the Industries Surveys team initially and then with Detection and response team as a ML engineer. I currently work with Nvidia as ML platform engineer.  
 
 I completed my Masters' in Computer Science and Engineering from Indian Institute of Technology, Bombay in 2019. Before that I completed my Bachelors in Engineering from Jawaharlal Nehru Engineering College in Aurangabad, Maharashtra. I have completed my schooling from Holy Cross English High School, Aurangabad.
 
