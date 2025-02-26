@@ -5,8 +5,10 @@ title: Home
 
 
  <img src="../images/profile_pic.jpg" width="50%" height="50%" align="right" /> 
+
 > [!Note]
 > I have switched to visual medium for blogging about my side projects. Follow my [Instagram page](https://www.instagram.com/abhishek_does_stuff/) to know about the latest GenAI, 3D printing and Electronics related hacks
+
 # About me
 I am an energetic and outgoing person who loves to interact with people. I love to trek and cycle and generally enjoy company. Below is a short bio of me. 
 
