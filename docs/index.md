@@ -1,40 +1,34 @@
 ---
 layout: page
-title: Obsidian + Syncthing
-permalink: /docs/
+title: Musings & Research
+permalink: /musings/
 ---
 
-# Obsidian + Syncthing
+# Musings & Research
 
-This page documents the setup for keeping an Obsidian vault available even when the workstation is offline.
+This page is for notes, ideas, research snippets, long-form musings, and anything else I want to keep visible on the web.
 
-## Recommended approach
+## What belongs here
 
-- Keep the Obsidian vault in a local folder on your main device
-- Sync that folder with the workstation using Syncthing
-- Point Obsidian at the local folder, not the remote machine
+- Research notes
+- Draft thoughts and essays
+- Links and references worth revisiting
+- Project ideas and experiments
+- Short writeups that do not need a full blog post
 
-## Why this works
+## Suggested workflow
 
-- Obsidian gets a normal local path
-- The vault stays usable when the workstation is off
-- Changes propagate automatically once both devices are online
+- Write locally in Obsidian
+- Sync with Syncthing
+- Publish selected notes here when they are ready
 
-## Suggested folder layout
+## Good structure ideas
 
-- Local vault: `~/Documents/ObsidianVault`
-- Remote mirror on workstation: the same relative folder name inside your synced area
+- A simple index of posts and notes
+- Tags like `research`, `ideas`, `draft`, `reference`
+- One page per topic with backlinks
+- A lightweight “now / reading / thinking about” section
 
-## Notes
+## Next step
 
-- Try to keep one machine as the primary editor to avoid conflicts
-- If you edit on both devices, Syncthing may create conflict files
-- For always-on access, sshfs is nice, but for an intermittently available workstation, Syncthing is the better fit
-
-## Next steps
-
-1. Create the local vault folder
-2. Install and pair Syncthing on both devices
-3. Share the vault folder
-4. Set `OBSIDIAN_VAULT_PATH` to the local folder
-5. Add notes here as the setup evolves
+If you want, this can become a small web notebook instead of a traditional blog.
