@@ -28,8 +28,8 @@ I love watching movies and I'm proud of the reviews I've written for movies I've
 
 **For my work/gaming/hobby setup please visit [this](../tech_gear) page**
 
-## Docs
-* [Obsidian + Syncthing setup](../docs/)
+## Notes
+* [Musings & research notebook](../musings/)
 
 ## Social Media links
 I mainly use [facebook](https://www.facebook.com/bagdeabhishek) for keeping up with friends, I rarely post any updates though. I update all the books i've read on [goodreads](https://www.goodreads.com/bagdeabhishek). I maintain professional acquaintance through my [linkedin](https://www.linkedin.com/in/bagdeabhishek/) profile. Anyone who wishes to get in touch can mail me on [bagdeabhishek@gmail.com](mailto:bagdeabhishek@gmail.com). I've also written some answers on [quora](https://www.quora.com/profile/Abhishek-Bagade)
