@@ -12,6 +12,7 @@ This is the public index for completed musings/research notes.
 
 - [Test from Hermes](/musings/test-from-hermes/)
 - [Backrooms Creepypasta](/musings/backrooms-creepypasta/)
+- [LLM Post-Training RL Methods](/musings/llm-post-training-rl-methods/)
 
 ## Archive path
 
