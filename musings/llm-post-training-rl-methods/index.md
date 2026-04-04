@@ -8,100 +8,58 @@ permalink: /musings/llm-post-training-rl-methods/
 _AI-generated research note. Verify critical claims with primary sources._
 
 ## TL;DR
-- Post-training alignment for LLMs now splits into two practical families: online RL (PPO/REINFORCE/RLOO/GRPO) and preference-loss optimization (DPO/ORPO/KTO/RRHF).
-- PPO RLHF is historically foundational but operationally heavy.
-- DPO-family methods are simpler to run and often more stable.
-- GRPO + RLVR are particularly useful for reasoning tasks where rewards are verifiable (math/code/tests).
+- Post-training alignment for LLMs splits into online RL methods and preference-loss optimization methods.
+- PPO RLHF is foundational but infra-heavy.
+- DPO-family methods are simpler and often more stable in practice.
+- GRPO/RLVR are strong for reasoning tasks with verifiable rewards.
 
-## Why these methods emerged
-SFT alone made models more usable, but not reliably preference-aligned for difficult behavior trade-offs.
-RLHF introduced reward-driven optimization, then later methods reduced stack complexity:
-- PPO RLHF: strong online control, but expensive and tuning-sensitive.
-- DPO/ORPO/KTO/RRHF: optimize preference structure more directly, often with lower infra burden.
-- Online lightweight variants: preserve on-policy adaptation without full PPO machinery.
+## Core objectives
 
-## Method cheat sheet
-
-### 1) PPO RLHF
-Equation (LaTeX):
-```latex
-\max_\theta \; \mathbb{E}_{x,y\sim\pi_\theta}[r_\phi(x,y)]
+### PPO-style RLHF
+$$
+\max_\theta \; \mathbb{E}_{x\sim\mathcal{D},y\sim\pi_\theta(\cdot|x)}[r_\phi(x,y)]
 -\beta\,\mathrm{KL}(\pi_\theta(\cdot|x)\|\pi_{ref}(\cdot|x))
-```
-Plain English: maximize reward-model score while constraining policy drift from reference.
+$$
+Plain English: maximize reward-model score while controlling policy drift from the reference policy.
 Variables:
-- $\theta$: policy params
-- $r_\phi$: reward model
-- $\beta$: KL strength
+- $\pi_\theta$: current policy
+- $\pi_{ref}$: reference policy
+- $r_\phi$: reward model score
+- $\beta$: KL regularization strength
 
-Code example source:
-- Repo: https://github.com/openai/lm-human-preferences
-- File: `lm_human_preferences/train_policy.py`
-
-### 2) DPO
-Equation (LaTeX):
-```latex
-\mathcal{L}_{DPO}(\theta)= -\log\sigma\left(\beta[(\log\pi_\theta(y_w|x)-\log\pi_\theta(y_l|x))-(\log\pi_{ref}(y_w|x)-\log\pi_{ref}(y_l|x))]\right)
-```
-Plain English: directly increase preferred-vs-rejected margin relative to a reference policy.
+### DPO
+$$
+\mathcal{L}_{DPO}(\theta)= -\log\sigma\Big(\beta[(\log\pi_\theta(y_w|x)-\log\pi_\theta(y_l|x))-(\log\pi_{ref}(y_w|x)-\log\pi_{ref}(y_l|x))]\Big)
+$$
+Plain English: increase preferred-response likelihood relative to rejected responses, compared against a reference model margin.
 Variables:
 - $y_w$: preferred response
 - $y_l$: rejected response
-- $\beta$: margin scaling
+- $\beta$: margin scaling parameter
 
-Code example source:
-- Repo: https://github.com/huggingface/trl
-- File: `trl/scripts/dpo.py`
-
-### 3) ORPO
-- One-stage objective combining SFT likelihood and preference pressure (odds-ratio style).
-- Useful when wanting monolithic training without separate RLHF pipeline.
-
-Code example source:
-- Repo: https://github.com/huggingface/trl
-- File: `examples/scripts/orpo.py`
-
-### 4) KTO
-- Preference optimization using desirability labels inspired by prospect-theoretic framing.
-- Helpful when preference annotation style is not strictly pairwise-only.
-
-Code example source:
-- Repo: https://github.com/huggingface/trl
-- File: `examples/scripts/kto.py`
-
-### 5) RRHF
-- Ranking-based objective: encourages model likelihood orderings that match human rankings.
-
-Code example source:
-- Repo: https://github.com/GanjinZero/RRHF
-- File: `train.py`
-
-### 6) Online lightweight RL (RLOO / REINFORCE-style)
-Equation (LaTeX):
-```latex
-\nabla_\theta J(\theta)=\mathbb{E}_{y\sim\pi_\theta}[ (R-b)\nabla_\theta\log\pi_\theta(y|x)]
-```
-Plain English: increase probability of above-baseline outputs; decrease below-baseline ones.
+### REINFORCE-style online objective
+$$
+\nabla_\theta J(\theta)=\mathbb{E}_{y\sim\pi_\theta(\cdot|x)}\left[(R(x,y)-b(x))\nabla_\theta\log\pi_\theta(y|x)\right]
+$$
+Plain English: increase probability of outputs with above-baseline reward and decrease probability of below-baseline outputs.
 Variables:
-- $R$: reward
-- $b$: baseline
+- $R(x,y)$: reward
+- $b(x)$: variance-reduction baseline
 
-Code example source:
-- Repo: https://github.com/huggingface/trl
-- File: `trl/scripts/rloo.py`
+## Method families (practical view)
+- PPO RLHF: strongest online control, highest stack complexity.
+- DPO/ORPO/KTO/RRHF: direct preference optimization, usually easier to run.
+- RLOO/REINFORCE-style online: middle-ground online adaptation.
+- GRPO + RLVR: effective where reward can be checked automatically (tests, verifiers, symbolic checks).
 
-### 7) GRPO + RLVR
-- GRPO normalizes relative outcomes within grouped rollouts to stabilize reasoning updates.
-- RLVR uses verifiable rewards (unit tests, symbolic checks, math verifiers), reducing reward-model ambiguity.
-
-Code example source:
-- Repo: https://github.com/huggingface/trl
-- File: `trl/scripts/grpo.py`
-
-## Practical selection guide
-- If you already have high-quality pairwise data and need a simpler stack: start with DPO-family.
-- If you need strong online control and can afford infrastructure: PPO-style RLHF.
-- If rewards are objectively verifiable (code/math): GRPO/RLVR-style pipelines are often strong choices.
+## Code anchors (major repos)
+- OpenAI `lm-human-preferences` — PPO RLHF training loop
+- Hugging Face `trl/scripts/dpo.py` — DPO
+- Hugging Face `examples/scripts/orpo.py` — ORPO
+- Hugging Face `examples/scripts/kto.py` — KTO
+- GanjinZero `RRHF/train.py` — RRHF ranking loss
+- Hugging Face `trl/scripts/rloo.py` — online RLOO
+- Hugging Face `trl/scripts/grpo.py` — GRPO
 
 ## References
 1. InstructGPT / RLHF: https://arxiv.org/abs/2203.02155
