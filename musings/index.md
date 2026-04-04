@@ -11,6 +11,7 @@ This is the public index for completed musings/research notes.
 ## Notes
 
 - [Test from Hermes](/musings/test-from-hermes/)
+- [Backrooms Creepypasta](/musings/backrooms-creepypasta/)
 
 ## Archive path
 
