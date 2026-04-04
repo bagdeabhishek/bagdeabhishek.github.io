@@ -39,6 +39,9 @@ social:
     - https://www.goodreads.com/bagdeabhishek
 # Build settings
 markdown: kramdown
+kramdown:
+  input: GFM
+  math_engine: mathjax
 theme: jekyll-theme-hacker
 plugins:
   - jekyll-feed
