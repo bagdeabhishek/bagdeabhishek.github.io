@@ -1,10 +1,8 @@
 ---
 layout: default
-title: 2026-04-03 - Backrooms Creepypasta
+title: Backrooms Creepypasta
 permalink: /musings/2026-04-03-backrooms-creepypasta/
 ---
-
-# 2026-04-03 - Backrooms Creepypasta
 
 # Backrooms Creepypasta
 _AI-generated research draft. Verify critical claims with primary sources._

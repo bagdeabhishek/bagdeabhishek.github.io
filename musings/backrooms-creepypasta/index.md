@@ -1,3 +1,9 @@
+---
+layout: default
+title: Backrooms Creepypasta
+permalink: /musings/backrooms-creepypasta/
+---
+
 # Backrooms Creepypasta
 _AI-generated research draft. Verify critical claims with primary sources._
 Status: Complete
@@ -65,14 +71,14 @@ The long-running “where is this place?” question gained a stronger evidence 
 - How much of Backrooms’ persistence is image aesthetics versus “noclip” framing language?
 
 ## References (Clickable)
-- [R1] [Wikipedia - The Backrooms](https://en.wikipedia.org/wiki/The_Backrooms)
-- [R2] [4plebs archive thread target](https://archive.4plebs.org/x/thread/22661164)
-- [R3] [Internet Archive blog - The Backrooms of the Internet Archive](https://blog.archive.org/2024/06/01/the-backrooms-of-the-internet-archive/)
-- [R4] [VICE - How a Creepy Office Photo Became an Internet Bogeyman](https://www.vice.com/en/article/is-the-backrooms-real/)
-- [R5] [Know Your Meme timeline page](https://news.knowyourmeme.com/memes/the-backrooms)
-- [R6] [Internet Archive - Original Backrooms Full Photo Set](https://archive.org/details/backrooms-photos)
-- [R7] [Kane Pixels wiki page (community documentation)](https://kanepixelsbackrooms.fandom.com/wiki/The_Backrooms_(Found_Footage))
-- [R8] [Wikimedia Commons provenance page](https://commons.wikimedia.org/wiki/File:HobbyTown_USA_Oshkosh_interior_under_construction_2002_(The_Backrooms).jpg)
+- [R1] Wikipedia - The Backrooms: https://en.wikipedia.org/wiki/The_Backrooms
+- [R2] 4plebs archive thread target: https://archive.4plebs.org/x/thread/22661164
+- [R3] Internet Archive blog - The Backrooms of the Internet Archive: https://blog.archive.org/2024/06/01/the-backrooms-of-the-internet-archive/
+- [R4] VICE - How a Creepy Office Photo Became an Internet Bogeyman: https://www.vice.com/en/article/is-the-backrooms-real/
+- [R5] Know Your Meme timeline page: https://news.knowyourmeme.com/memes/the-backrooms
+- [R6] Internet Archive - Original Backrooms Full Photo Set: https://archive.org/details/backrooms-photos
+- [R7] Kane Pixels wiki page (community documentation): https://kanepixelsbackrooms.fandom.com/wiki/The_Backrooms_(Found_Footage)
+- [R8] Wikimedia Commons provenance page: https://commons.wikimedia.org/wiki/File:HobbyTown_USA_Oshkosh_interior_under_construction_2002_(The_Backrooms).jpg
 
 ## Spoilers (Hidden Until Requested)
 > Intentionally left blank. Ask to reveal spoiler analysis.
