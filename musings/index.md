@@ -15,6 +15,7 @@ This is the public index for completed musings/research notes.
 - [Backrooms Creepypasta](/musings/backrooms-creepypasta/)
 - [Backrooms Creepypasta](/musings/backrooms-creepypasta/)
 - [LLM Post-Training RL Methods](/musings/llm-post-training-rl-methods/)
+- [Retina Tears and Retinal Detachment](/musings/retina-tears-and-detachment/)
 
 ## Archive path
 
