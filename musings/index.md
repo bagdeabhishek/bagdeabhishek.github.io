@@ -10,8 +10,8 @@ This is the public index for completed musings/research notes.
 
 ## Notes
 
-- [Backrooms Creepypasta](/musings/2026-04-03-backrooms-creepypasta/)
 - [Backrooms Creepypasta](/musings/backrooms-creepypasta/)
+- [Backrooms Creepypasta](/musings/2026-04-03-backrooms-creepypasta/)
 - [Backrooms Creepypasta](/musings/backrooms-creepypasta/)
 - [LLM Post-Training RL Methods](/musings/llm-post-training-rl-methods/)
 - [Retina Tears and Retinal Detachment](/musings/retina-tears-and-detachment/)
