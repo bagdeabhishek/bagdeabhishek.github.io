@@ -5,6 +5,7 @@ permalink: /musings/30-fps-vs-60-fps-cinematic-look/
 ---
 
 # Why 30 fps Often Feels More Cinematic Than 60 fps
+
 _AI-assisted research synthesis. Verify critical claims with primary sources._
 Status: Completed
 Last updated: 2026-04-15T21:04:55+05:30
