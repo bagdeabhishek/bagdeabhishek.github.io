@@ -5,7 +5,6 @@ permalink: /musings/delegating-tasks-to-smaller-models-without-losing-quality/
 ---
 
 # Delegating Tasks to Smaller Models Without Losing Quality
-
 _AI-assisted research synthesis. Verify critical claims with primary sources._
 Status: Completed
 Last updated: 2026-04-16T23:29:17+05:30
