@@ -17,6 +17,8 @@ This is the public index for completed musings/research notes.
 - [LLM Post-Training RL Methods](/musings/llm-post-training-rl-methods/)
 - [Retina Tears and Retinal Detachment](/musings/retina-tears-and-detachment/)
 
+- [Delegating Tasks to Smaller Models Without Losing Quality](/musings/delegating-tasks-to-smaller-models-without-losing-quality/)
+
 ## Archive path
 
 Raw/add-only synced notes continue to appear under:
