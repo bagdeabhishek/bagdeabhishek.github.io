@@ -6,7 +6,7 @@ permalink: /musings/
 
 # Musings
 
-A collection of completed research notes published from the Obsidian vault.
+A running collection of published notes from my Obsidian vault.
 
 ## Notes
 
