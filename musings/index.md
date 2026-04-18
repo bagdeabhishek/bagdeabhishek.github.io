@@ -1,12 +1,12 @@
 ---
 layout: default
-title: Musings Index
+title: Musings
 permalink: /musings/
 ---
 
 # Musings
 
-This is the public index for completed musings/research notes.
+A collection of completed research notes published from the Obsidian vault.
 
 ## Notes
 
@@ -18,8 +18,3 @@ This is the public index for completed musings/research notes.
 - [LLM Post-Training RL Methods](/musings/llm-post-training-rl-methods/)
 - [Personalized Photo Selection with VLMs and LoRA Preferences](/musings/personalized-photo-selection-with-vlms/)
 - [Retina Tears and Retinal Detachment](/musings/retina-tears-and-detachment/)
-
-## Archive path
-
-Raw/add-only synced notes continue to appear under:
-- `/musings/obsidian/completed/`
