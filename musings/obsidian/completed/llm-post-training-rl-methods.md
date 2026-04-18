@@ -1,456 +1,282 @@
 # LLM Post-Training RL Methods
-_AI-generated research draft. Verify critical claims with primary sources._
+_AI-assisted research synthesis. Verify critical claims with primary sources._
 Status: Completed
-Last updated: 2026-04-04T19:36:21+05:30
+Last updated: 2026-04-15T21:48:27+05:30
+Mode: method-survey
 
-## TL;DR
-- LLM alignment methods now split into: (1) online RL (PPO/REINFORCE/GRPO/RLVR) and (2) preference-loss optimization (DPO/ORPO/KTO/RRHF).
-- PPO-based RLHF is foundational, but engineering-heavy; many teams prefer simpler DPO-family training.
-- GRPO + RLVR became important for reasoning (math/code) where rewards are verifiable.
-- There is no universal winner: method choice depends on data type (pairwise preference vs verifiable reward), compute budget, and deployment goals.
+## Summary
+- Modern LLM post-training is best understood as a set of different feedback pipelines, not as one single RLHF recipe.
+- Each process exists to solve a different bottleneck: SFT teaches basic behavior, reward modeling scores behavior, PPO improves policy online, DPO-family methods simplify preference optimization, and RLVR/GRPO exploit objective verifiers.
+- The most important question is not "which method is most advanced?" but "what kind of signal do I actually have: demonstrations, pairwise preferences, AI critiques, or verifiable rewards?"
+- PPO-style RLHF helps when you need online policy shaping against a learned reward, but it is operationally heavy.
+- DPO-family methods help by turning preference learning into a simpler direct optimization problem.
+- RLVR and GRPO help most when correctness is externally checkable, such as in math and code, because they replace subjective judging with programmatic reward.
 
-## Background & Context
-LLM post-training started with RLHF pipelines that train a reward model from human preferences and then optimize the policy with PPO under KL constraints. This works but is expensive and fragile. Newer methods aim to keep alignment quality while reducing complexity.
+## Overview
+Post-training is the stage where a pretrained or instruction-tuned model is pushed toward useful behavior after generic next-token learning. In practice, this is where teams try to make a model more helpful, more aligned, better at reasoning, more controllable, or safer in deployment.
 
-## Taxonomy + Math + Algorithms (integrated)
+The confusing part is that many articles introduce these methods as if they are interchangeable upgrades on one ladder. They are not. Each process changes a different part of the training loop and helps for a different reason. The real topic is therefore not just a list of acronyms. It is an explanation of what each stage does to the model and why that stage exists.
 
-### A) Classical RLHF with PPO (explicit online RL)
-Pipeline:
-1) SFT on demonstrations
-2) Reward model on preference pairs
-3) PPO optimization against reward + KL regularization
+## Background
+A good mental model is that post-training needs three ingredients:
+- a model that can already produce plausible answers
+- a signal telling you which answers are better
+- an optimization method that moves the model toward those better answers without breaking everything else
 
-Core objective:
-Equation (LaTeX):
-```latex
-\max_\theta \; \mathbb{E}_{x\sim\mathcal{D},\;y\sim\pi_\theta(\cdot|x)}\left[r_\phi(x,y)\right]
--\beta\,\mathrm{KL}\!\left(\pi_\theta(\cdot|x)\,\|\,\pi_{ref}(\cdot|x)\right)
-```
-Plain English: Train the model to get higher reward-model scores, while penalizing it if it drifts too far from a reference policy.
+Different methods differ mainly in the second and third ingredients.
+
+### The broad pipeline before method-specific details
+1. Pretraining teaches broad language competence.
+2. Supervised fine-tuning (SFT) teaches basic instruction-following or task format.
+3. Post-training methods then use preferences, critiques, or verifiable rewards to further shape behavior.
+
+That means many of the named methods below are not replacements for pretraining or even always for SFT. They usually sit on top of an already competent base policy.
+
+## Core Analysis
+### Problem framing
+The central problem is: how do we reliably teach the model which outputs are better when "better" is expensive to label, partly subjective, and easy to game?
+
+Different post-training methods answer that question differently:
+- RLHF says: learn a reward model from preference judgments, then optimize against it.
+- DPO-family says: skip the separate reward-model-plus-RL stack and optimize directly from preference comparisons.
+- RLVR says: when correctness is objectively checkable, use that verifier directly.
+- Constitutional or RLAIF-style methods say: scale feedback by using principle-guided AI critique instead of relying only on human rankings.
+
+### Method families
+#### Step 1: Supervised Fine-Tuning (SFT)
+What it does:
+SFT teaches the model to imitate high-quality answers on curated examples. It is usually the stage where a raw base model learns basic assistant behavior: answer the question, use the requested format, follow simple instructions, and stay on topic.
+
+How it helps:
+SFT creates a usable starting policy. Without it, later preference or RL stages have to optimize a model that may still answer in the wrong format, ignore instructions, or produce unstable completions. In other words, SFT does not solve nuanced alignment by itself, but it gives the later stages something worth refining.
+
+What it does not solve well:
+It mostly imitates demonstrations. That means it is weaker at teaching subtle tradeoffs like "be more helpful but not too verbose" or "prefer safer answer A over plausible but risky answer B" when those tradeoffs are not exhaustively demonstrated.
+
+#### PPO-style RLHF
+What it does:
+This is the classic RLHF pipeline. It usually has four moving parts:
+1. collect demonstrations to get an SFT policy
+2. sample multiple model answers
+3. ask humans to rank those answers
+4. train a reward model on those rankings, then optimize the policy online with PPO
+
+The core objective is:
+
+$$
+\max_\theta \; \mathbb{E}_{x, y \sim \pi_\theta(\cdot|x)}[r_\phi(x,y)] - \beta\,\mathrm{KL}(\pi_\theta(\cdot|x)\|\pi_{ref}(\cdot|x))
+$$
+Plain English: improve outputs that the reward model scores highly, while penalizing the model if it drifts too far from a trusted reference policy.
 Variables:
-- $\theta$: current policy model parameters
-- $x$: prompt sampled from dataset $\mathcal{D}$
-- $y$: completion sampled from current policy
-- $\pi_\theta$: current policy distribution
-- $\pi_{ref}$: reference (usually SFT/base) policy
-- $r_\phi(x,y)$: reward model score
-- $\beta$: KL penalty strength
-- $\mathrm{KL}(\cdot\|\cdot)$: divergence between policies
-
-Token-level KL shaping (common in practice):
-Equation (LaTeX):
-```latex
-r_t^{total} = r_t^{score} - \beta\left(\log\pi_\theta(a_t|s_t)-\log\pi_{ref}(a_t|s_t)\right)
-```
-Plain English: At each token step, total reward is task/reward-model signal minus a penalty for deviating from the reference model token probability.
-Variables:
-- $t$: token timestep
-- $r_t^{score}$: base reward contribution at step $t$
-- $r_t^{total}$: KL-shaped reward at step $t$
-- $a_t$: chosen token/action at step $t$
-- $s_t$: state/context at step $t$
-- $\beta$: KL coefficient
-
-PPO clipped surrogate:
-Equation (LaTeX):
-```latex
-L^{PPO}(\theta)=\mathbb{E}_t\left[\min\left(\rho_tA_t,\;\mathrm{clip}(\rho_t,1-\epsilon,1+\epsilon)A_t\right)\right],
-\quad
-\rho_t=\frac{\pi_\theta(a_t|s_t)}{\pi_{\theta_{old}}(a_t|s_t)}
-```
-Plain English: Update the policy using advantage-weighted importance ratios, but clip updates so each step cannot change policy probability too aggressively.
-Variables:
-- $L^{PPO}(\theta)$: PPO objective
-- $\rho_t$: probability ratio (new policy vs old policy)
-- $A_t$: advantage estimate at step $t$
-- $\epsilon$: clipping threshold
-- $\theta_{old}$: parameters before current PPO update
-
-Why this matters:
-- strong online adaptation
-- historically validated (InstructGPT)
-
-Main pain points:
-- reward/KL tuning sensitivity
-- expensive multi-model training stack
-
-Intuition + why this method emerged:
-- Early instruction tuning alone (SFT) improved formatting/helpfulness but was weak at nuanced preference optimization.
-- RLHF+PPO emerged as a way to optimize long-horizon generation quality directly against a learned reward signal, while KL regularization prevented the policy from drifting into reward hacking.
-
-Code example (major repo): OpenAI `lm-human-preferences` (PPO RLHF)
-```python
-# Repo: https://github.com/openai/lm-human-preferences
-# File: lm_human_preferences/train_policy.py
-
-# L1: KL-shaped reward (reward score + KL control)
-kl = logprobs - ref_logprobs                           # compare policy vs reference
-non_score_reward = -self.kl_ctl.value * kl             # adaptive KL penalty
-rewards[:, -1] += scores                               # add task/reward-model score on terminal token
-
-# L2: PPO policy-ratio objective with clipping
-ratio = tf.exp(logprob - old_logprob)                  # importance ratio
-pg_losses = -advantages * ratio                        # unclipped PG objective
-pg_losses2 = -advantages * tf.clip_by_value(ratio, 1.0 - self.hparams.ppo.cliprange, 1.0 + self.hparams.ppo.cliprange)
-pg_loss = tf.reduce_mean(tf.maximum(pg_losses, pg_losses2))
-
-# L3: trainer step loop
-rollouts = self.policy.respond(queries, length=self.hparams.task.response_length)
-train_stats = self.train(rollouts=rollouts)            # multiple minibatch PPO epochs
-self.kl_ctl.update(stats['objective/kl'], self.hparams.ppo.batch_size)  # adaptive KL controller
-```
-
-### B) DPO-family (RL-free / RL-light preference optimization)
-
-#### DPO
-For each pair $(x,y_w,y_l)$:
-Equation (LaTeX):
-```latex
-\mathcal{L}_{DPO}(\theta)= -\log\sigma\Big(\beta[(\log\pi_\theta(y_w|x)-\log\pi_\theta(y_l|x))-(\log\pi_{ref}(y_w|x)-\log\pi_{ref}(y_l|x))]\Big)
-```
-Plain English: Make preferred responses more likely than rejected responses, relative to a reference model margin, using a logistic loss.
-Variables:
-- $\mathcal{L}_{DPO}(\theta)$: DPO loss
+- $\theta$: trainable policy parameters
 - $x$: prompt
-- $y_w$: preferred (“winner”) response
-- $y_l$: rejected (“loser”) response
-- $\pi_\theta$: trainable policy
+- $y$: sampled completion
+- $r_\phi$: reward-model score
+- $\pi_{ref}$: reference policy
+- $\beta$: KL-penalty strength
+
+What the reward model does:
+The reward model turns pairwise or ranked human judgments into a reusable scoring function. Instead of asking humans to compare every future answer during optimization, you train a model that predicts which output humans would prefer.
+
+How PPO helps:
+PPO is the online optimization step that actually changes the policy using reward-model scores. It helps by letting the current model sample fresh outputs, get scored, and then update itself carefully rather than jumping too far in one step. The KL penalty is important because it prevents the policy from drifting so far toward reward maximization that it becomes weird, repetitive, or reward-hacky.
+
+Why this process exists:
+This stack exists because pairwise human preference data is rich but sparse. The reward model compresses that signal, and PPO gives you a way to optimize against it online.
+
+What it helps with:
+- nuanced preference shaping beyond simple imitation
+- online refinement against current model behavior
+- cases where the best answer depends on subtle human judgment rather than exact correctness
+
+What makes it hard:
+It is operationally expensive because every piece matters: data collection, reward-model quality, rollout quality, KL tuning, PPO stability, and reward hacking defenses.
+
+#### DPO-family methods
+What they do:
+DPO, ORPO, KTO, and RRHF all try to learn from preference information without building the full reward-model-plus-PPO stack.
+
+The canonical DPO loss is:
+
+$$
+\mathcal{L}_{DPO}(\theta)= -\log\sigma\Big(\beta[(\log\pi_\theta(y_w|x)-\log\pi_\theta(y_l|x))-(\log\pi_{ref}(y_w|x)-\log\pi_{ref}(y_l|x))]\Big)
+$$
+Plain English: increase the probability of the preferred answer relative to the rejected one, measured against a reference-model baseline.
+Variables:
+- $x$: prompt
+- $y_w$: preferred answer
+- $y_l$: rejected answer
+- $\pi_\theta$: current policy
 - $\pi_{ref}$: frozen reference policy
-- $\beta$: inverse-temperature / margin scaling term
-- $\sigma(\cdot)$: sigmoid function
+- $\beta$: scaling term
 
-Interpretation: directly increases preferred-vs-rejected log-prob margin relative to reference model; avoids explicit reward model + PPO loop.
+How DPO helps:
+DPO helps by removing the explicit reward-model training stage and the online PPO loop. Instead of first learning a separate score function and then doing RL, it directly updates the model so preferred answers become more likely than dispreferred answers.
 
-#### ORPO
-Monolithic training: NLL/SFT term plus odds-ratio preference penalty in one stage (reference-model-free formulation).
+Why that matters:
+This simplifies the training pipeline dramatically. You still use human preference data, but you no longer need to maintain as much RL machinery. That usually means fewer moving parts, lower engineering burden, and often more stable optimization.
 
-#### KTO
-Uses binary desirability labels and prospect-theoretic human-aware loss design, rather than pairwise-only preference likelihood.
+How the variants help:
+- ORPO helps by combining language-model fitting and preference pressure in one stage, reducing dependence on a separate reference-model-heavy setup.
+- KTO helps when feedback is easier to express as good/bad desirability labels than as strict winner/loser pairs.
+- RRHF helps when the supervision is better thought of as ranking multiple candidates rather than only pairwise binary comparisons.
 
-#### RRHF
-Aligns model likelihood ordering to human ranking via ranking loss over sampled responses.
+What these methods are best at:
+They are best when you already have preference-style data and want a simpler way to learn from it.
 
-Why this family took off:
-- simpler and often more stable than PPO stacks
-- lower infra and hyperparameter burden
+What they give up:
+They are usually less explicitly online than PPO-style RLHF. That can matter when the model distribution shifts and you want continual updates based on fresh generations.
 
-Intuition + why this method family emerged:
-- Researchers observed that if preferences are pairwise (winner vs loser), you can optimize the policy margin directly without fitting a separate reward model and running PPO.
-- This cuts failure modes from reward overfitting and PPO instability while preserving much of the alignment gain.
+#### Online preference optimization variants
+What they do:
+These methods try to bring back some of the advantages of online RL without always paying the full PPO-style complexity cost. They sample from the current policy, score current outputs, and optimize on-policy or near-on-policy preference objectives.
 
-Code examples (major repos):
+How they help:
+They help when static preference datasets become stale. If the current model has changed enough, old offline comparisons may no longer reflect the errors or opportunities the model now produces. Online methods keep the training signal closer to the model's current behavior.
 
-DPO — Hugging Face TRL (`trl/scripts/dpo.py`)
-```python
-# Repo: https://github.com/huggingface/trl
-# File: trl/scripts/dpo.py
+Why they are not always the default:
+They are operationally heavier than purely offline preference learning, so the extra adaptability only pays off when fresh on-policy data actually matters.
 
-# L1: load preference dataset
-dataset = load_dataset(script_args.dataset_name, name=script_args.dataset_config)
+#### RLVR and GRPO
+What RLVR does:
+RLVR means reinforcement learning with verifiable rewards. Instead of asking humans or a learned reward model which answer is better, you use an external checker: unit tests, exact answer matching, theorem verification, parsers, or similar automatic scoring rules.
 
-# L2: initialize trainer with DPO objective
-trainer = DPOTrainer(
-    model,
-    args=training_args,
-    train_dataset=dataset[script_args.dataset_train_split],
-    eval_dataset=dataset[script_args.dataset_test_split] if training_args.eval_strategy != "no" else None,
-    peft_config=peft_config,
-)
+What that changes:
+It changes the source of truth. The training signal is no longer "what humans preferred" but "what the verifier judged correct."
 
-# L3: optimize
-trainer.train()
-```
+What GRPO does:
+GRPO is one way to stabilize optimization in this setting by comparing multiple sampled answers for the same prompt and assigning them relative advantage.
 
-ORPO — Hugging Face TRL experimental ORPO (`examples/scripts/orpo.py`)
-```python
-# Repo: https://github.com/huggingface/trl
-# File: examples/scripts/orpo.py
-
-# L1: ORPO trainer setup (single-stage SFT + odds-ratio preference pressure)
-trainer = ORPOTrainer(
-    model,
-    args=training_args,
-    train_dataset=dataset[script_args.dataset_train_split],
-    eval_dataset=dataset[script_args.dataset_test_split] if training_args.eval_strategy != "no" else None,
-    processing_class=tokenizer,
-    peft_config=get_peft_config(model_args),
-)
-
-# L2: train
-trainer.train()
-```
-
-KTO — Hugging Face TRL experimental KTO (`examples/scripts/kto.py`)
-```python
-# Repo: https://github.com/huggingface/trl
-# File: examples/scripts/kto.py
-
-# L1: policy + reference models for KTO-style preference optimization
-model = AutoModelForCausalLM.from_pretrained(model_args.model_name_or_path)
-ref_model = AutoModelForCausalLM.from_pretrained(model_args.model_name_or_path)
-
-# L2: initialize KTO trainer
-trainer = KTOTrainer(
-    model,
-    ref_model,
-    args=training_args,
-    train_dataset=dataset[script_args.dataset_train_split],
-    processing_class=tokenizer,
-)
-
-# L3: train
-trainer.train()
-```
-
-RRHF — GanjinZero/RRHF (`train.py`)
-```python
-# Repo: https://github.com/GanjinZero/RRHF
-# File: train.py
-
-# L1: ranking-aware RRHF loss (penalize wrong orderings vs human scores)
-def rrhf_loss(self, scores, idxs, rw_scores):
-    diff = scores.unsqueeze(0) - scores.unsqueeze(-1)
-    rw_diff = rw_scores.unsqueeze(0) - rw_scores.unsqueeze(-1)
-    aval = torch.bitwise_and(rw_diff > 0, diff < 0)[0]
-    return -diff[aval].sum()
-
-# L2: combine RRHF ranking loss + SFT anchor
-loss = self.args.rrhf_weight * rrhf_loss + sft_loss
-```
-
-### C) Online preference optimization variants (middle ground)
-Goal: retain online sampling advantages with lighter objectives than classical PPO-RLHF.
-
-- Online IPO / IPO-MD formulations
-- Online DPO variants for multi-objective or continual settings
-- REINFORCE-style simplifications revisiting whether PPO complexity is always needed
-
-REINFORCE-style objective (generic form):
-Equation (LaTeX):
-```latex
-\nabla_\theta J(\theta)=\mathbb{E}_{y\sim\pi_\theta(\cdot|x)}\left[(R(x,y)-b(x))\,\nabla_\theta\log\pi_\theta(y|x)\right]
-```
-Plain English: Increase probability of outputs with above-baseline reward and decrease probability of below-baseline outputs.
+$$
+A_i = \frac{r_i - \mu_r}{\sigma_r + \varepsilon}
+$$
+Plain English: each sampled answer is judged relative to the other sampled answers for the same prompt, so answers that score above the group average get positive learning signal.
 Variables:
-- $J(\theta)$: expected return objective
-- $R(x,y)$: reward for output $y$ on prompt $x$
-- $b(x)$: baseline to reduce gradient variance
-- $\nabla_\theta\log\pi_\theta(y|x)$: policy score-function gradient
-
-Typical algorithm pattern:
-1) sample fresh outputs from current policy
-2) score with preference model/judge
-3) update with preference objective online
-
-Tradeoff:
-- better adaptability than pure offline training
-- still requires online data and robust infra
-
-Intuition + why this method class emerged:
-- Offline preference methods are efficient but can get stale as policy distribution shifts.
-- Online variants re-sample from the current policy each round and update immediately, keeping gradients matched to current behavior.
-- REINFORCE-style simplifications became attractive because they remove some PPO machinery while retaining online policy improvement.
-
-Code example (major repo): Hugging Face TRL RLOO (`trl/scripts/rloo.py`)
-```python
-# Repo: https://github.com/huggingface/trl
-# File: trl/scripts/rloo.py
-
-# L1: define reward functions used online during rollout/update
-reward_funcs = []
-if script_args.reward_model_name_or_path:
-    reward_funcs.append(script_args.reward_model_name_or_path)
-
-# L2: initialize online trainer
-trainer = RLOOTrainer(
-    model=model_args.model_name_or_path,
-    reward_funcs=reward_funcs,
-    args=training_args,
-    train_dataset=dataset[script_args.dataset_train_split],
-    peft_config=get_peft_config(model_args),
-)
-
-# L3: online optimization loop (inside trainer)
-trainer.train()
-```
-
-### D) Constitutional AI / RLAIF
-Use constitutional principles and AI critiques/preferences to reduce dependence on human pair labels.
-
-Conceptual flow:
-1) self-critique + revision supervised phase
-2) preference data generated using AI constitutional judgments
-3) RL or preference optimization on this AI feedback signal
-
-Strength:
-- scales safety supervision with less direct human labeling
-
-Risk:
-- model-judge bias / constitution design bias
-
-Intuition + why this method emerged:
-- Human preference labeling is expensive and can bottleneck safety iteration.
-- Constitutional AI reframes alignment as: "write principles first, then use AI to critique/revise outputs against those principles," creating scalable synthetic preference signals (RLAIF).
-
-Code example (practical open-source pattern in major repo): RLAIF-style data consumed via DPO in TRL
-```python
-# Repo: https://github.com/huggingface/trl
-# File: trl/scripts/dpo.py
-# Note: in practice, `dataset_name` can point to AI-judged/constitutional preference data.
-
-# L1: load preference pairs (human- or AI-judged)
-dataset = load_dataset(script_args.dataset_name, name=script_args.dataset_config)
-
-# L2: run preference optimization over that data
-trainer = DPOTrainer(
-    model,
-    args=training_args,
-    train_dataset=dataset[script_args.dataset_train_split],
-)
-
-# L3: optimize
-trainer.train()
-```
-
-Practical note:
-- Public frontier labs rarely release full constitutional self-critique training pipelines end-to-end; open repos most often expose the downstream optimization stage on constitution-derived preference data.
-
-### E) GRPO + RLVR (verifiable reward RL)
-
-#### RLVR setup
-Use externally verifiable reward function:
-Equation (LaTeX):
-```latex
-r(x,y)\in\{0,1\}\;\text{or}\;\mathbb{R}
-```
-Plain English: Reward comes from objective checkers (like tests or exact answer match), not a learned reward model.
-Variables:
-- $r(x,y)$: verifier-provided reward
-- $x$: prompt/input
-- $y$: generated output
-- $\{0,1\}$: binary pass/fail reward case
-- $\mathbb{R}$: real-valued reward case
-
-#### GRPO-style relative advantage
-For a prompt, sample $G$ candidates, rewards $r_i$, then normalize within group:
-Equation (LaTeX):
-```latex
-A_i=\frac{r_i-\mu_r}{\sigma_r+\varepsilon},
-\quad
-\mu_r=\frac{1}{G}\sum_i r_i,
-\quad
-\sigma_r^2=\frac{1}{G}\sum_i(r_i-\mu_r)^2
-```
-Plain English: Each candidate is judged relative to other candidates for the same prompt; higher-than-group-average rewards get positive advantage.
-Variables:
-- $G$: group size (number of sampled candidates per prompt)
-- $r_i$: reward of candidate $i$
+- $r_i$: reward for candidate $i$
 - $\mu_r$: group mean reward
 - $\sigma_r$: group reward standard deviation
-- $\varepsilon$: small stabilizer constant
-- $A_i$: normalized relative advantage for candidate $i$
+- $\varepsilon$: stabilizer term
+- $A_i$: relative advantage for candidate $i$
 
-Then apply PPO-like update using these relative advantages.
+How RLVR helps:
+It helps by replacing expensive subjective judgment with objective feedback in domains where correctness is externally checkable. That is why it matters so much for math, code, and some structured reasoning tasks.
 
-Why this is effective:
-- excellent for math/code/reasoning where correctness is checkable
-- reduces reliance on expensive human preference labels
+How GRPO helps:
+It helps reduce variance and makes the update signal more comparative. Instead of asking whether an absolute score is good enough in the abstract, it asks which of the sampled answers for this prompt did better and by how much.
 
-Limit:
-- subjective tasks (style/helpfulness nuance) still need preference-oriented supervision
+What this process is good at:
+- pushing the model toward answers that pass tests or exact checks
+- exploiting large-scale cheap automatic reward
+- training reasoning systems in domains where correctness has a crisp notion
 
-Intuition + why this method emerged:
-- Preference labels are noisy/expensive for domains where correctness is objectively checkable.
-- RLVR replaces subjective reward modeling with hard verifiers (tests, exact matches, parsers).
-- GRPO then stabilizes learning by comparing candidates within each prompt-group, reducing variance from absolute reward scale.
+What it does not solve well:
+It is much weaker for things like tone, harmlessness, style, empathy, or other qualities that do not have robust external verifiers.
 
-Code example (major repo): Hugging Face TRL GRPO (`trl/scripts/grpo.py`)
-```python
-# Repo: https://github.com/huggingface/trl
-# File: trl/scripts/grpo.py
+#### Constitutional / RLAIF-style methods
+What they do:
+These methods use a written set of principles or constitutional rules to generate critiques, revisions, or preference labels with AI assistance. Instead of relying entirely on human raters, the system uses principle-guided model judgment to scale supervision.
 
-# L1: map string names to verifier-like reward functions
-reward_funcs_registry = {
-    "accuracy_reward": accuracy_reward,
-    "reasoning_accuracy_reward": reasoning_accuracy_reward,
-    "think_format_reward": think_format_reward,
-}
+How they help:
+They help when the bottleneck is not raw optimization but feedback generation. If human labeling is too slow or expensive, AI-generated critique can create more training signal.
 
-# L2: initialize GRPO with chosen reward functions
-trainer = GRPOTrainer(
-    model=model_args.model_name_or_path,
-    reward_funcs=reward_funcs,
-    args=training_args,
-    train_dataset=dataset[script_args.dataset_train_split],
-    peft_config=get_peft_config(model_args),
-)
+Why this matters:
+Safety and policy alignment often require many subtle judgments. Constitutional or RLAIF-style pipelines help scale those judgments.
 
-# L3: optimize group-relative objective
-trainer.train()
-```
+What the catch is:
+Their quality depends heavily on the constitution, the judge model, and the critique process. If those are flawed, the system can scale biased supervision rather than good supervision.
 
-## Comparative Snapshot
+### Representative methods
+A useful way to map the families is by the main bottleneck they solve:
+- SFT: teaches basic assistant behavior and formatting
+- PPO-RLHF: improves behavior using a learned human-preference reward and online policy updates
+- DPO/ORPO/KTO/RRHF: improve preference alignment with simpler direct objectives
+- Online preference methods: keep preference optimization matched to current model behavior
+- RLVR/GRPO: improve performance where objective correctness can be checked automatically
+- Constitutional/RLAIF: scale critique and policy feedback when human supervision is scarce
 
-| Method family | Signal type | Online sampling | Extra reward model | Strength | Weakness |
-|---|---|---:|---:|---|---|
-| PPO-RLHF | Human pairwise via RM | Yes | Yes | strong control | complex, brittle |
-| DPO/ORPO/KTO/RRHF | Preferences/desirability | Usually no | Usually no | simple, stable | may lag online RL in some settings |
-| Online IPO/Online DPO | Preferences | Yes | Optional | adaptive | non-trivial infra |
-| Constitutional/RLAIF | AI-evaluated principles | Varies | Often yes | scalable safety tuning | judge bias risk |
-| RLVR + GRPO | Verifiable correctness | Yes | No (if rules suffice) | excellent in math/code | weak for subjective quality |
+### Tradeoffs
+The main tradeoff is signal quality versus pipeline complexity.
 
-## Practical Guidance
-- Default baseline: DPO-like training on high-quality preference data.
-- Math/code-heavy objective tasks: RLVR + GRPO-style training.
-- Safety-heavy policy constraints: add Constitutional/RLAIF components.
-- If you have robust online RL infra: test PPO/REINFORCE-family against DPO baseline under equal compute.
+PPO-RLHF is attractive when subtle human judgment matters and online policy shaping is worth the cost. DPO-family methods are attractive when you want much of that alignment benefit with less operational complexity. RLVR is attractive when the task has a strong verifier, because the reward is cheaper and more objective. Constitutional methods are attractive when the hard part is generating enough feedback rather than optimizing against it.
 
-## Competing Views / Uncertainty
-- Debate: RLVR improves true reasoning vs mostly sampling efficiency.
-- "RL-free beats RL" is context-dependent, not universal.
-- Benchmark wins do not always transfer to product behavior.
+Another useful distinction is what each method assumes is available:
+- SFT assumes good demonstrations.
+- PPO-RLHF assumes human rankings plus infrastructure for reward modeling and online RL.
+- DPO-family assumes preference-style comparisons or related label structures.
+- RLVR assumes a reliable verifier.
+- Constitutional methods assume a credible rule set and judge process.
 
-## Media & Visual Evidence
-- ![InstructGPT canonical RLHF reference](https://arxiv.org/static/browse/0.3.4/images/arxiv-logo-one-color-white.svg)
-  - Source: [Training language models to follow instructions with human feedback](https://arxiv.org/abs/2203.02155)
-  - Why it matters: foundational modern RLHF pipeline.
+Established vs inferred:
+- Established: PPO-style RLHF is complex but powerful; DPO simplifies preference optimization; RLVR is well matched to verifier-rich domains.
+- Inferred: RLVR improves underlying reasoning in a broad sense rather than mostly improving search or sampling efficiency. That claim is promising but still under active debate.
 
-## Open Questions
-- When does online preference optimization consistently outperform offline DPO-family at equal compute?
-- How to robustly prevent verifier gaming in RLVR at scale?
-- What hybrid objective best combines subjective preference alignment with objective correctness?
+### Practical guidance
+If you want a simple decision rule, choose the method by the strongest signal you actually trust.
 
-## References (Clickable)
-- [R1] [Fine-Tuning Language Models from Human Preferences (2019)](https://arxiv.org/abs/1909.08593)
-- [R2] [InstructGPT / RLHF (2022)](https://arxiv.org/abs/2203.02155)
-- [R3] [RLHF with PPO implementation details (ICLR blog)](https://iclr-blogposts.github.io/2024/blog/the-n-implementation-details-of-rlhf-with-ppo/)
-- [R4] [Direct Preference Optimization (DPO)](https://arxiv.org/abs/2305.18290)
-- [R5] [ORPO: Monolithic Preference Optimization](https://arxiv.org/abs/2403.07691)
-- [R6] [KTO: Prospect-theoretic objective](https://arxiv.org/abs/2402.01306)
-- [R7] [RRHF: Rank Responses to Align](https://arxiv.org/abs/2304.05302)
-- [R8] [Online preference optimisation (IPO/Nash-MD)](https://arxiv.org/abs/2403.08635)
-- [R9] [Robust Multi-Objective Online DPO](https://arxiv.org/abs/2503.00295)
-- [R10] [Back to Basics: REINFORCE-style alignment](https://arxiv.org/abs/2402.14740)
-- [R11] [Constitutional AI / RLAIF](https://arxiv.org/abs/2212.08073)
-- [R12] [DeepSeekMath (GRPO context)](https://arxiv.org/abs/2402.03300)
-- [R13] [RLVR reasoning analysis](https://arxiv.org/abs/2506.14245)
-- [R14] [OpenAI lm-human-preferences (PPO RLHF code)](https://github.com/openai/lm-human-preferences)
-- [R15] [Hugging Face TRL DPO script](https://github.com/huggingface/trl/blob/main/trl/scripts/dpo.py)
-- [R16] [Hugging Face TRL GRPO script](https://github.com/huggingface/trl/blob/main/trl/scripts/grpo.py)
-- [R17] [Hugging Face TRL RLOO script](https://github.com/huggingface/trl/blob/main/trl/scripts/rloo.py)
-- [R18] [Hugging Face TRL ORPO example](https://github.com/huggingface/trl/blob/main/examples/scripts/orpo.py)
-- [R19] [Hugging Face TRL KTO example](https://github.com/huggingface/trl/blob/main/examples/scripts/kto.py)
-- [R20] [GanjinZero RRHF training code](https://github.com/GanjinZero/RRHF/blob/main/train.py)
+- Start with SFT because later stages work better when the model already knows the basic job.
+- Use PPO-style RLHF when nuanced human preference is central and you can support the heavier online pipeline.
+- Use DPO-family methods when you have preference data but want a simpler and more stable optimization route.
+- Use RLVR/GRPO when you have genuine external correctness checks.
+- Use constitutional or RLAIF-style methods when you need scalable policy or safety feedback.
 
-## Spoilers (Hidden Until Requested)
-> Intentionally left blank. Ask to reveal spoiler analysis.
+### Open questions
+The field is still unresolved on several fronts:
+- When do online preference methods beat offline direct-preference methods at equal compute and equal data quality?
+- How much of RLVR's apparent reasoning gain is deeper reasoning versus stronger search, reranking, or sample efficiency?
+- What is the best hybrid recipe for combining subjective helpfulness signals with objective correctness signals?
 
-## Change Log
-- 2026-04-04T19:36:21+05:30 : Finalized as Completed note and adapted display equations for GitHub Pages compatibility.
-- 2026-04-04T17:05:55+05:30: Created in-progress note and started source collection plan.
-- 2026-04-04T17:05:55+05:30: Added first-pass synthesis across PPO-RLHF, DPO-family, GRPO/RLVR, RLAIF, online preference methods.
-- 2026-04-04T18:28:01+05:30: Added mathematical formulations and algorithm sketches.
-- 2026-04-04T18:32:20+05:30: Converted LaTeX delimiters for markserv compatibility.
-- 2026-04-04T18:35:47+05:30: Reorganized note so equations/algorithms live inside each relevant method section (context-preserving structure).
-- 2026-04-04T18:42:28+05:30: Added per-formula `Plain English` and `Variables` blocks directly under each equation for readability and rendering-safe structure.
-- 2026-04-04T19:00:33+05:30: Added per-method intuition/origin narratives and line-by-line code examples from major public repos (PPO, DPO, ORPO, KTO, RRHF, RLOO, GRPO/RLVR, plus RLAIF usage pattern).
+## Evidence and Sources
+### Claim cluster 1: the post-training stack is modular because each process solves a different bottleneck
+- InstructGPT is the clearest primary source for the demonstration -> preference -> reward model -> PPO pipeline.
+- DPO is the clearest primary source for the claim that preference optimization can often be simplified into a direct objective.
+- RLVR papers support the claim that verifier-based training is a distinct regime, not just a small variant of RLHF.
+
+### Claim cluster 2: PPO-style RLHF helps with nuanced preference shaping, but at high operational cost
+- Ouyang et al. (2022) support the usefulness of RLHF for following user intent and improving preference-aligned behavior.
+- The ICLR implementation-details write-up supports the operational claim that PPO-RLHF involves many practical knobs and failure modes.
+
+### Claim cluster 3: DPO-family methods help by simplifying preference learning
+- Sharma et al. (2023/2024) support the core argument that direct preference optimization can match or beat PPO-based RLHF in some settings while being substantially simpler.
+- ORPO, KTO, and RRHF support the broader trend toward lighter-weight preference optimization.
+
+### Claim cluster 4: RLVR/GRPO helps most when correctness is checkable
+- DeepSeekMath and later RLVR analysis support the claim that verifier-based feedback is especially useful in math and code.
+- The stronger claim that RLVR broadly improves reasoning quality remains more debated than the narrower claim that it helps on verifier-rich tasks.
+
+## Uncertainties and Competing Views
+High-confidence claims:
+- SFT, RLHF, DPO-family methods, and RLVR solve different problems in the overall training pipeline.
+- PPO-style RLHF has more moving parts than DPO-family methods.
+- RLVR is best matched to domains with robust verifiers.
+
+Medium-confidence claims:
+- Online preference optimization is worth the additional complexity in many production settings.
+- RLVR improves reasoning itself, not just answer selection efficiency.
+
+Competing views:
+- Some researchers see frontier reasoning progress as evidence that online RL with verifiable reward is becoming central again.
+- Others argue that for many real assistants, better data and cleaner preference optimization matter more than elaborate RL stacks.
+
+What evidence would change the conclusion:
+- More controlled apples-to-apples comparisons between PPO-style RLHF, DPO-family training, and RLVR under equal compute would sharpen when each process truly helps most.
+- Better studies on verifier gaming would show whether some RLVR gains are more fragile than they currently appear.
+
+## Practical Takeaways
+- Think of post-training as a pipeline of jobs, not a contest of buzzwords.
+- Ask first what supervision signal you trust: demonstrations, human comparisons, AI critiques, or automatic verifiers.
+- Use SFT to establish basic assistant behavior, then choose later stages based on what kind of improvement you need.
+- Use PPO-style RLHF when you need online preference shaping, DPO-family methods when you want simpler preference learning, and RLVR when correctness can be checked mechanically.
+- When reading new post-training papers, always ask: what stage of the pipeline does this method replace, simplify, or strengthen?
+
+## References
+1. [Ziegler et al. (2019), Fine-Tuning Language Models from Human Preferences](https://arxiv.org/abs/1909.08593) — Primary; early modern RLHF formulation.
+2. [Ouyang et al. (2022), Training language models to follow instructions with human feedback](https://arxiv.org/abs/2203.02155) — Primary; canonical InstructGPT RLHF pipeline.
+3. [Huang et al. (2024), The N Implementation Details of RLHF with PPO](https://iclr-blogposts.github.io/2024/blog/the-n-implementation-details-of-rlhf-with-ppo/) — Secondary technical synthesis; operational complexity and implementation pitfalls.
+4. [Sharma et al. (2023/2024), Direct Preference Optimization: Your Language Model is Secretly a Reward Model](https://arxiv.org/abs/2305.18290) — Primary; core DPO argument and objective.
+5. [Hong et al. (2024), ORPO: Monolithic Preference Optimization without Reference Model](https://arxiv.org/abs/2403.07691) — Primary; one-stage preference optimization variant.
+6. [Ethayarajh et al. (2024), KTO: Model Alignment as Prospect Theoretic Optimization](https://arxiv.org/abs/2402.01306) — Primary; desirability-label alternative to pairwise-only framing.
+7. [Yuan et al. (2023), RRHF: Rank Responses to Align Language Models with Human Feedback](https://arxiv.org/abs/2304.05302) — Primary; ranking-based alignment objective.
+8. [Xu et al. (2024), Online Preference Optimization for Language Model Alignment](https://arxiv.org/abs/2405.19107) — Primary; representative online preference optimization reference.
+9. [Guo et al. (2024), DeepSeekMath: Pushing the Limits of Mathematical Reasoning in Open Language Models](https://arxiv.org/abs/2402.03300) — Primary; important GRPO-context reference.
+10. [Zheng et al. (2025), Reinforcement Learning with Verifiable Rewards Implicitly Incentivizes Correct Reasoning in Base LLMs](https://arxiv.org/abs/2506.14245) — Primary; argues RLVR can improve reasoning quality, not just sample efficiency.
+11. [Bai et al. (2022), Constitutional AI: Harmlessness from AI Feedback](https://arxiv.org/abs/2212.08073) — Primary; key RLAIF / constitutional framing.
