@@ -1,3 +1,9 @@
+---
+layout: default
+title: Personalized Photo Selection with VLMs and LoRA Preferences
+permalink: /musings/personalized-photo-selection-with-vlms/
+---
+
 # Personalized Photo Selection with VLMs and LoRA Preferences
 _AI-assisted research synthesis. Verify critical claims with primary sources._
 Status: Completed
