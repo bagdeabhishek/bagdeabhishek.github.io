@@ -1,12 +1,12 @@
 ---
 layout: default
-title: Musings
+title: Musings Index
 permalink: /musings/
 ---
 
 # Musings
 
-A running collection of published notes from my Obsidian vault.
+This is the public index for completed musings/research notes.
 
 ## Notes
 
@@ -15,6 +15,12 @@ A running collection of published notes from my Obsidian vault.
 - [Backrooms Creepypasta](/musings/backrooms-creepypasta/)
 - [Backrooms Creepypasta](/musings/backrooms-creepypasta/)
 - [Delegating Tasks to Smaller Models Without Losing Quality](/musings/delegating-tasks-to-smaller-models-without-losing-quality/)
+- [Image and Text to Scale-Accurate Parametric 3D Models](/musings/image-and-text-to-scale-accurate-parametric-3d-models/)
 - [LLM Post-Training RL Methods](/musings/llm-post-training-rl-methods/)
 - [Personalized Photo Selection with VLMs and LoRA Preferences](/musings/personalized-photo-selection-with-vlms/)
 - [Retina Tears and Retinal Detachment](/musings/retina-tears-and-detachment/)
+
+## Archive path
+
+Raw/add-only synced notes continue to appear under:
+- `/musings/obsidian/completed/`
