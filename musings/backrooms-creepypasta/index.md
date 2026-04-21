@@ -5,7 +5,6 @@ permalink: /musings/backrooms-creepypasta/
 ---
 
 # Backrooms Creepypasta
-
 _AI-generated research draft. Verify critical claims with primary sources._
 Status: Complete
 Completed: 2026-04-04T16:16:27+05:30
