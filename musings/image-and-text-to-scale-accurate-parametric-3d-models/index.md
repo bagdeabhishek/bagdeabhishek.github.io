@@ -5,6 +5,7 @@ permalink: /musings/image-and-text-to-scale-accurate-parametric-3d-models/
 ---
 
 # Image and Text to Scale-Accurate Parametric 3D Models
+
 _AI-assisted research synthesis. Verify critical claims with primary sources._
 Status: Completed
 Last updated: 2026-04-19T18:48:28+05:30

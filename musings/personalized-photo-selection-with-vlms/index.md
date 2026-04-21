@@ -5,6 +5,7 @@ permalink: /musings/personalized-photo-selection-with-vlms/
 ---
 
 # Personalized Photo Selection with VLMs and LoRA Preferences
+
 _AI-assisted research synthesis. Verify critical claims with primary sources._
 Status: Completed
 Last updated: 2026-04-18T12:00:29+05:30
