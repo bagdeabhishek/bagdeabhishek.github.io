@@ -5,7 +5,6 @@ permalink: /musings/retina-tears-and-detachment/
 ---
 
 # Retina Tears and Retinal Detachment
-
 _AI-generated research draft. This is not medical diagnosis. Verify urgent clinical decisions with a retina specialist / ophthalmologist._
 Status: Completed
 Last updated: 2026-04-15T11:57:14+05:30
