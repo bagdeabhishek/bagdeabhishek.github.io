@@ -20,6 +20,7 @@ This is the public index for completed musings/research notes.
 - [Personalized Photo Selection with VLMs and LoRA Preferences](/musings/personalized-photo-selection-with-vlms/)
 - [Retina Tears and Retinal Detachment](/musings/retina-tears-and-detachment/)
 
+
 ## Archive path
 
 Raw/add-only synced notes continue to appear under:
