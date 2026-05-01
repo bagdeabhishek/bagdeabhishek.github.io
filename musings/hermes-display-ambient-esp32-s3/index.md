@@ -82,28 +82,30 @@ First-time setup is the hardest UX challenge on bare ESP32. The recommended path
 4. Daemon discovers ESP32 via hardcoded IP in `.env` (v0) or ESP32 announces itself (v1)
 
 ### Device Discovery
+
 | Method | Viability |
 |--------|-----------|
-| Hardcoded IP + DHCP reservation | v0 default — simplest |
-| ESP32 announces IP to daemon | v1 — best UX, requires daemon URL in firmware |
-| mDNS | Avoid — ESP32 mDNS stack unreliable |
-| LAN scan | Avoid — slow, fragile |
+| Hardcoded IP + DHCP reservation | v0 default - simplest |
+| ESP32 announces IP to daemon | v1 - best UX, requires daemon URL in firmware |
+| mDNS | Avoid - ESP32 mDNS unreliable |
+| LAN scan | Avoid - slow, fragile |
 
 ### Customer Flows (12 audited)
+
 | Flow | Status |
 |------|--------|
-| A: First-time setup | ✅ Mostly covered (1 gap: PlatformIO docs) |
-| B: Daily morning brief | ✅ Good |
-| C: Afternoon refresh | ✅ Minor (mode diff, mid-glance swap) |
-| D: Device reboot/recovery | ✅ Good |
-| E: Agent/daemon failures | ⚠️ Gap F: stale-content nudge missing |
-| F: Manual push from terminal | ❌ **Gap G: must fix** |
-| G: Firmware brick recovery | ⚠️ Document recovery steps |
-| H: Wi-Fi network change | ⚠️ Dual reconfig: ESP32 + daemon |
-| I: Night mode / display dim | ❌ **Gap K: must fix** |
-| J: Health check / status | ✅ Good |
+| A: First-time setup | Mostly covered (Gap A: PlatformIO docs) |
+| B: Daily morning brief | Good |
+| C: Afternoon refresh | Minor (mode diff, mid-glance swap) |
+| D: Device reboot/recovery | Good |
+| E: Agent/daemon failures | Gap F: stale-content nudge missing |
+| F: Manual push from terminal | Gap G: must fix |
+| G: Firmware brick recovery | Document recovery steps |
+| H: Wi-Fi network change | Dual reconfig: ESP32 + daemon |
+| I: Night mode / display dim | Gap K: must fix |
+| J: Health check / status | Good |
 | K: Multiple users | Out of scope v0 |
-| L: First-time ESP32 user | ⚠️ Add docs |
+| L: First-time ESP32 user | Add docs |
 
 ### Gaps Summary (27 total, A-Z)
 **Must-fix before v0:**
@@ -123,15 +125,15 @@ First-time setup is the hardest UX challenge on bare ESP32. The recommended path
 |---|------|-------|------------|
 | R1 | Claude on critical path | High | Template layout first |
 | R2 | HTTP + LVGL concurrency | Medium | Lightweight handler, dirty flag |
-| R3 | First-time LVGL/ESP32 | Med-High | Run Waveshare's demo first |
+| R3 | First-time LVGL/ESP32 | Med-High | Run Waveshare demo first |
 | R4 | HSDL validation duplication | Low | Correct design |
 | R5 | Value vs smartphone | Medium | Physically separate screen |
-| R6 | ~~Hermes-only~~ Agent-agnostic | Resolved | Stdio MCP server |
+| R6 | Hermes-only MCP → agent-agnostic | Resolved | Stdio MCP server |
 | R7 | LAN-only security | Low | Bearer token, locked URL |
 | R8 | Touch hardware unused | Medium | Single-user, acceptable |
-| R9 | No scrolling > 800×480 | Low | 30-object limit, priority pruning |
-| R10 | Board variant differences | **High** | Pin exact SKU |
-| R11 | Flash size overflow | **High** | Measure binary, require 16MB |
+| R9 | No scrolling beyond 800x480 | Low | 30-object limit, priority pruning |
+| R10 | Board variant differences | High | Pin exact SKU |
+| R11 | Flash size overflow | High | Measure binary, require 16MB |
 | R12 | Backlight unknown | Medium | Verify board schematic |
 | R13 | No persistent RTC | Medium | NTP every boot |
 | R14 | Dual-core not pinned | Medium | Pin LVGL + WiFi to separate cores |
@@ -147,11 +149,11 @@ First-time setup is the hardest UX challenge on bare ESP32. The recommended path
 **Gap:** No existing product combines AI-decides-what-matters, push delivery, calm bounded content, and notification-free UX.
 
 ### Hardware Feasibility
-- Waveshare provides PlatformIO-based LVGL demo projects for their 7" boards
-- 800×480 RGB565 framebuffer ≈ 768KB, PSRAM handles this comfortably
+- Waveshare provides PlatformIO-based LVGL demo projects for their 7-inch boards
+- 800x480 RGB565 framebuffer = ~768KB, PSRAM handles this comfortably
 - ESP32-S3 as HTTP server + LVGL renderer is standard for this class
-- MAX payload 16KB is very manageable for WiFi
-- Risk areas confirmed: board variant differences, flash size with font embedding, core affinity, backlight control, power draw
+- Max payload 16KB is manageable for WiFi
+- Risk areas: board variants, flash size with fonts, core affinity, backlight, power draw
 
 ### Cross-Agent Compatibility
 - Hermes: native MCP client via config.yaml
@@ -193,11 +195,11 @@ First-time setup is the hardest UX challenge on bare ESP32. The recommended path
 ### Before Buying Hardware
 - Pin exact Waveshare SKU (recommended: `ESP32-S3-Touch-LCD-7` or `ESP32-S3-LCD-7`)
 - Verify PSRAM is 8MB or 16MB variant
-- Check if the board's backlight is PWM GPIO or I2C
-- Buy a 5V/2A USB-C charger (not just a phone charger)
+- Check if the board backlight is PWM GPIO or I2C
+- Buy a 5V/2A USB-C charger
 
 ### Before Writing Firmware
-- Run Waveshare's official LVGL demo unchanged first (Milestone 0)
+- Run Waveshare official LVGL demo unchanged first (Milestone 0)
 - Measure binary size after embedding Montserrat fonts
 - Pin LVGL renderer to core 1, WiFi to core 0
 - Skip flash writes for unchanged HSDL to avoid wear
