@@ -19,7 +19,7 @@ This is the public index for completed musings/research notes.
 - [LLM Post-Training RL Methods](/musings/llm-post-training-rl-methods/)
 - [Personalized Photo Selection with VLMs and LoRA Preferences](/musings/personalized-photo-selection-with-vlms/)
 - [Retina Tears and Retinal Detachment](/musings/retina-tears-and-detachment/)
-
+- [HermesDisplay \u2014 Ambient AI Display on ESP32-S3](/musings/hermes-display-ambient-esp32-s3/)
 
 ## Archive path
 
