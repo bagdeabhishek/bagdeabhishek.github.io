@@ -224,3 +224,4 @@ For Claude Code: claude mcp add cerebro -- cerebro-mcp
 4. [Waveshare ESP32-S3 7-inch LCD](https://www.waveshare.com/esp32-s3-touch-lcd-7.htm) — primary hardware reference
 5. ESP32-S3 Datasheet (Espressif) — primary
 6. MCP Python SDK — primary
+7. DeepSeek API Docs — secondary
