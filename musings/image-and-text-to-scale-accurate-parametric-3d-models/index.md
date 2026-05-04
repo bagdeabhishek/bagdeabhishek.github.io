@@ -7,499 +7,224 @@ permalink: /musings/image-and-text-to-scale-accurate-parametric-3d-models/
 # Image and Text to Scale-Accurate Parametric 3D Models
 _AI-assisted research synthesis. Verify critical claims with primary sources._
 Status: Completed
-Last updated: 2026-04-19T18:48:28+05:30
+Last updated: 2026-04-18T14:38:47+05:30
 Mode: method-survey
 
 ## Summary
-- **Verdict: Only worth doing if you constrain the scope to mechanical/product-style objects and build a harness around strong existing models plus CAD tools.** It is **probably not worth doing** as a pure end-to-end "any image or words to perfect parametric CAD" model project today.
-- The most realistic architecture is **not** a single generative model. It is a **multimodal CAD agent stack**: perception -> scale estimation -> retrieval of reference parts/templates -> CAD program synthesis -> geometry validation -> repair loop.
-- For **text-only** generation, the field is moving fast and tool-using LLM systems are already competitive. For **image-to-parametric CAD**, the problem is much harder, and single-image exact recovery remains fragile unless the object family is constrained.
-- If you want outputs like "Xbox controller battery cover with a GoPro mount baked in," the best path is a **reference-model composition harness** with part retrieval and constraint-based merging, not pure text-to-geometry generation.
-- Frontier models such as **Claude Opus 4.7** look promising for planning, tool use, and code generation, but the strongest public evidence still supports using them inside a **verified CAD loop**, not trusting them as one-shot CAD generators.
+- **Verdict: Only worth doing if you constrain the scope to mechanical/product-style parts.** Full-scene reconstruction from images alone is still a research-grade problem.
+- The best pipeline today: image → 3D reconstruction (point cloud/mesh) → parametric fitting (B-rep/CSG) → scale calibration from reference objects or metadata.
+- If you want outputs like “Xbox controller battery cover with a GoPro mount back” style parts, programmatic CAD generation from text is viable now. If you want photorealistic whole-object reconstruction from a single phone photo with accurate dimensions, the tech isn't there yet.
+- Smartphone photogrammetry is good enough for basic dimensional extraction when you have scale references, but precision degrades for complex geometries and reflective surfaces.
+- The strongest recent systems combine multi-view reconstruction with learned shape priors; purely single-image approaches still produce dimensionally ambiguous outputs.
+- Scale accuracy is the hardest sub-problem. Most reconstruction pipelines produce scale-ambiguous outputs. Adding scale requires either known reference objects, depth sensors, or metadata-driven calibration.
 
 ## Overview
-This note surveys how to build a system that converts either:
-1. **images with scale information**, or
-2. **natural language requests**
+This note surveys the problem of converting images (photos, screenshots, sketches) and text descriptions into scale-accurate parametric 3D models suitable for manufacturing, CAD, and 3D printing. The core challenge is that photographs are 2D projections with unknown scale, camera parameters, and occlusions — recovering a dimensionally accurate 3D model requires solving an underdetermined inverse problem.
 
-into **scale-accurate, editable parametric 3D models**.
-
-The target here is not generic mesh output. It is closer to **real CAD**: B-rep solids, CAD command programs, or other structured parametric representations that can be modified, measured, and manufactured.
-
-That distinction matters. A large fraction of "text-to-3D" and "image-to-3D" progress is aimed at meshes, NeRFs, Gaussian splats, or visually plausible shapes. Those are useful for graphics, but they are not good enough when you need dimensioned, editable parts with manufacturable geometry.
+The note focuses on three sub-problems:
+1. Image-to-3D reconstruction (geometry extraction from photos)
+2. Parametric CAD generation (producing editable B-rep/CSG/STEP models, not just meshes)
+3. Scale calibration (making the output dimensionally accurate)
 
 ## Background
-There are now several overlapping research directions:
-- **text-to-3D** for graphics
-- **image-to-3D** for reconstruction
-- **text-to-CAD** for executable parametric programs
-- **image-to-CAD** for reverse engineering from photos or rendered images
-- **B-rep generation** for direct CAD-native geometry
-- **agentic CAD systems** where a model controls FreeCAD, CadQuery, or OpenSCAD with verification loops
+Traditional 3D reconstruction (photogrammetry, structure from motion) can produce accurate meshes from multiple calibrated images. But these meshes are not parametric CAD models — they can't be easily edited in Fusion 360 or SolidWorks, and they lack the manufacturing semantics (holes, fillets, extrusions) that engineers need.
 
-The central difficulty is that parametric CAD combines:
-- discrete modeling steps,
-- continuous dimensions,
-- topology,
-- constraints,
-- exact validity,
-- and often references to sub-features like faces, edges, or sketch entities.
-
-This makes CAD much less forgiving than code generation or mesh generation.
-
-For your use case, there are three especially important distinctions:
-1. **Image-to-3D is not image-to-CAD.** A good mesh prior is not the same as a good parametric model.
-2. **Single-view estimation is not scale-accurate reverse engineering.** Scale needs explicit cues or calibrated measurement.
-3. **Assembly/edit tasks are not object generation tasks.** "Battery cover with a GoPro mount" is better framed as template retrieval + constrained composition than as fully novel generation.
+The recent explosion in AI-driven 3D generation (NeRF, Gaussian Splatting, diffusion-based 3D) has dramatically improved reconstruction quality from sparse views, but most systems still output meshes or point clouds, not parametric models. A parallel research thread on programmatic CAD generation (text-to-CAD, image-to-CAD) has emerged, aiming to produce editable CAD formats directly.
 
 ## Core Analysis
-### Problem framing
-You are really asking for one system with at least three subproblems:
-
-1. **Geometry recovery**
-   - infer object shape from words or images
-2. **Scale recovery**
-   - infer true dimensions from cues such as fiducials, known objects, camera calibration, or user measurements
-3. **Parametric reconstruction or composition**
-   - turn the shape into editable CAD operations, dimensions, sketches, and feature relationships
-
-These can be solved in different ways depending on the input mode.
-
-### Pipeline mental model
-The most practical pipeline today is:
-1. **Interpret the input**
-   - text prompt, one or more photos, optional reference part IDs, optional known dimensions
-2. **Estimate or anchor scale**
-   - fiducial marker, ruler, ArUco tag, known dimension, camera intrinsics, or multi-view reconstruction
-3. **Classify the task type**
-   - pure generation, reverse engineering, edit existing part, or compose existing parts
-4. **Retrieve priors**
-   - reference CAD models, part libraries, object templates, feature libraries, mounting standards
-5. **Synthesize CAD program or parametric structure**
-   - CadQuery, FreeCAD Python, OpenSCAD, STEP-oriented structured representation, or patch-based CAD decoder
-6. **Execute and validate**
-   - compile the geometry, check solid validity, measure dimensions, compare against image/text constraints
-7. **Repair or clarify**
-   - ask for missing dimensions, fix invalid geometry, or refine with visual/numeric feedback
-
-This can be summarized as:
-
-$$
-\hat{P} = \operatorname*{argmax}_P \; \text{Fit}(P, X, T, S, R) \quad \text{s.t. valid}(P)=1
-$$
-Plain English: choose the CAD program or parametric model $P$ that best fits the images, text, scale cues, and retrieved references, while remaining geometrically valid.
-Variables:
-- $P$: candidate CAD program or parametric model.
-- $X$: visual observations such as one or more photos.
-- $T$: text instructions or prompt.
-- $S$: scale information such as fiducials, ruler, or known dimensions.
-- $R$: retrieved templates or reference parts.
-- $\text{Fit}(\cdot)$: score measuring how well the output matches the input conditions.
-- $valid(P)$: CAD validity constraint, such as executable code and valid solid geometry.
-
-A simple scale anchoring equation looks like:
-
-$$
-\text{scale} = \frac{d_{real}}{d_{image}} \cdot f
-$$
-Plain English: the global scale can be estimated from a known real-world distance, the corresponding image measurement, and camera calibration terms.
-Variables:
-- $d_{real}$: known real-world distance or marker size.
-- $d_{image}$: measured image-space extent for the same object.
-- $f$: camera-dependent conversion term derived from calibration or pose.
-
-The exact implementation depends on whether you use calibrated monocular geometry, multi-view reconstruction, or fiducial pose estimation.
-
-### Method families
-#### 1. Script-first text-to-CAD generation
-**What it does:** maps text into executable CAD code such as CadQuery, FreeCAD Python, or OpenSCAD.
-
-**How it helps:** gives you editable parametric outputs immediately and lets you verify geometry by execution.
-
-**Why it exists:** LLMs already know Python reasonably well, and script-based CAD languages are much easier to target than opaque CAD kernels or raw B-rep graphs.
-
-**What it is good at:**
-- simple to moderate mechanical parts
-- brackets, mounts, covers, enclosures, holders
-- iterative edits through code regeneration
-
-**What it does not solve well:**
-- under-specified prompts
-- exact assembly reasoning
-- arbitrary complex consumer products in one shot
-- precise scale without explicit dimensions
-
-Representative work:
-- Text-to-CadQuery (2025)
-- CAD-Coder (2025)
-- ProCAD (2026)
-- CADSmith (2026)
-- FutureCAD (2026)
-- STEP-LLM (2026)
-
-#### 2. Image-to-CAD through factorization
-**What it does:** splits image-to-CAD into subproblems such as discrete structure prediction plus continuous parameter prediction.
-
-**How it helps:** reduces the difficulty of directly predicting a full CAD program from pixels.
-
-**Why it exists:** CAD outputs mix discrete and continuous structure, which is hard to learn end-to-end.
-
-**What it is good at:**
-- object families with repeated structures
-- category-level reconstruction
-- single-object reverse engineering where the part grammar is constrained
-
-**What it does not solve well:**
-- unconstrained arbitrary objects
-- exact scale from a single casual photo
-- complicated assembly composition without external priors
-
-Representative work:
-- Img2CAD (2024/2025)
-- CADCrafter (CVPR 2025)
-- CADDreamer (2025)
-
-#### 3. Direct B-rep or CAD-native generation
-**What it does:** generates CAD-native geometry directly, such as B-rep structures or editable surface patches.
 
-**How it helps:** avoids lossy mesh intermediates and can produce cleaner engineering-style geometry.
-
-**Why it exists:** meshes are insufficient for editable CAD and manufacturing workflows.
-
-**What it is good at:**
-- compact, structured geometry
-- higher-fidelity CAD-like outputs
-- direct export to STEP-like workflows
-
-**What it does not solve well:**
-- robust long-horizon feature logic
-- exact dimension handling from vague prompts
-- compositional edits unless tied to feature logic or retrieval
-
-Representative work:
-- OpenECAD (2024)
-- CMT / mmABC (2025)
-- GraphBrep (2025)
-- AutoBrep (2025)
-- DreamCAD (2026)
-
-#### 4. Agent-aided CAD generation
-**What it does:** uses an LLM or multimodal model as a planner/coder controlling a real CAD engine, then validates and repairs the result using programmatic checks.
-
-**How it helps:** moves the burden from latent memorization to tool use, retrieval, validation, and iterative correction.
-
-**Why it exists:** CAD errors are often easier to detect with a compiler, kernel measurements, and render checks than with a purely learned loss.
-
-**What it is good at:**
-- practical workflows today
-- staying current with CAD APIs via RAG rather than retraining
-- combining multiple models and tools
-- integrating reference parts and assemblies
-
-**What it does not solve well:**
-- very high latency if the loop is too heavy
-- tasks with weak priors and poor retrieval coverage
-- tasks that need strong geometric perception from a single poor image
-
-Representative work:
-- CADSmith (2026)
-- ToolCAD (2026)
-- AADvark / Agent-Aided Design for Dynamic CAD Models (2026)
-- FreeCAD MCP projects
-
-### Representative methods
-#### Text-to-CadQuery and CAD-Coder
-These are among the clearest signals that **code-first CAD generation** is a serious path. Both target **CadQuery**, which is important because it is Pythonic, executable, and measurable. CAD-Coder adds chain-of-thought and geometric reward, while Text-to-CadQuery shows that fine-tuning larger code-capable models materially improves performance.
-
-This is a strong argument that if your target output is parametric CAD, **choosing the right output language matters more than trying to train a generic 3D model first**.
-
-#### ProCAD and clarification-first systems
-ProCAD is especially relevant to your use case because natural language CAD requests are often incomplete. For example, "Xbox controller battery cover with a GoPro mount" leaves many questions open:
-- which controller generation?
-- which mount standard?
-- exact attachment position?
-- target wall thickness and printing constraints?
-
-The paper's core insight is correct: **do not hallucinate missing dimensions**. Ask or infer only where justified.
-
-#### CADSmith-style harnesses
-CADSmith is one of the strongest current signals for your question because it argues directly for a **harness over fine-tuning** in many practical settings. It uses:
-- multi-agent decomposition,
-- retrieval over CAD docs,
-- programmatic geometric validation,
-- separate judge model,
-- nested correction loops.
-
-This is very close to what you should build first.
-
-It is also the clearest connection to your Opus comment: the paper uses a stronger **Claude Opus** judge over a **Claude Sonnet** generator to reduce confirmation bias.
-
-#### Img2CAD, CADCrafter, and CADDreamer
-These show that image-conditioned parametric CAD is becoming real, but also expose the current constraints:
-- synthetic training data matters a lot
-- geometric features such as depth and normals matter more than raw RGB appearance
-- factorization and geometry-aware conditioning are crucial
-- single-view reverse engineering is still difficult
-
-The main lesson is not "a foundation model will solve this end-to-end." The lesson is that **image-to-CAD needs decomposition, geometry priors, and strong validation**.
-
-#### DreamCAD and parametric surface generation
-DreamCAD is impressive because it claims multimodal CAD generation from text, images, and point clouds with editable patch-based surfaces and STEP output. But its representation is still not the same as a feature-history CAD model. It is closer to a CAD-friendly surface generator than to a fully faithful editable design history.
-
-That means it is exciting as a geometry backbone, but it does not remove the need for a harness if you want exact product edits and compositions.
-
-### Tradeoffs
-#### End-to-end fine-tuned model
-Pros:
-- can become excellent for a narrow domain
-- potentially lower latency at inference than a big agent loop
-- can absorb repetitive priors for one object family
-
-Cons:
-- expensive data and training burden
-- brittle when task format or CAD API changes
-- weak on retrieval, composition, and dynamic edits unless explicitly trained
-- hard to guarantee exact scale and constraints
-
-Best fit:
-- industrial domain with lots of aligned paired data
-- narrow part families
-- you control the output grammar and evaluator
-
-#### Harness around strong existing models
-Pros:
-- fastest route to a working system
-- easier to integrate reference models and standards
-- easier to add measurement verification and repair
-- benefits immediately from stronger frontier models like Opus 4.7
-- easier to keep current as tool APIs evolve
-
-Cons:
-- more system engineering
-- more moving pieces
-- potentially higher latency and inference cost
-- can feel less elegant than a single end-to-end model
-
-Best fit:
-- real product prototype now
-- mixed workloads: text, images, edits, compositions
-- when exactness matters more than demo quality
-
-#### Hybrid path
-This is the best long-term plan:
-- start with a harness
-- collect traces, corrections, CAD execution logs, and failure cases
-- fine-tune only once you know what the harness consistently fails on
-
-This mirrors what the best current CAD papers are converging on: code-first generation, verifier-guided repair, and post-training with geometric reward.
-
-### Practical guidance
-#### Verdict
-**Verdict: Only worth doing if you constrain the domain and build a harness around existing SOTA models plus CAD tools.**
-
-More explicitly:
-- **Worth doing as a serious applied research / product prototype:** yes
-- **Worth doing as a broad "any photo or words to exact CAD" startup claim:** probably not
-- **Worth doing for constrained families like mounts, covers, brackets, adapters, enclosures, battery doors, fixtures:** yes
-- **Worth doing if you need one-shot single-image exact reverse engineering of arbitrary objects:** no, not yet
-
-#### Why this verdict follows from the evidence
-- **Alternatives are getting strong** in text-to-CAD and tool-assisted CAD generation.
-- **Image-to-CAD is improving**, but exact scale-accurate single-view reverse engineering remains fragile.
-- **Delivery is feasible today** as an agentic CAD harness, especially with FreeCAD/CadQuery/OpenCascade.
-- **Implementation burden is high** for end-to-end training because you need aligned datasets, CAD validation, and often synthetic data pipelines.
-- **The meaningful gap still exists** in multimodal, scale-aware, compositional, reference-grounded CAD editing.
-
-In other words: there is room for a useful system, but not for a naive one.
-
-#### Best implementation strategies
-##### Option A — Harness-first product system (recommended)
-Build a multimodal pipeline with these modules:
-1. **Input parser**
-   - text request, photos, optional known measurements, optional existing CAD references
-2. **Scale subsystem**
-   - ArUco/AprilTag/ruler detection
-   - camera calibration or structure-from-motion if multi-view
-   - optional manual dimension confirmation UI
-3. **Task router**
-   - classify as: generate from text, reverse-engineer from image, edit existing CAD, compose reference parts
-4. **Retrieval subsystem**
-   - fetch templates from STEP/FreeCAD/CadQuery library
-   - use CAD similarity search for known parts
-   - fetch standards such as GoPro mount geometry, screw standards, dovetails, snap fits
-5. **CAD planner/coder**
-   - use frontier model (e.g. Opus 4.7 or similar) to produce a structured spec and then CAD code
-6. **Kernel execution + validation**
-   - OpenCascade / CadQuery / FreeCAD execution
-   - validate bounding box, volume, face counts, wall thickness, mounting positions, boolean success
-7. **Repair loop**
-   - cheaper model or same model revises code from exact failure report
-8. **Judge loop**
-   - stronger model or separate critic reviews rendered views + measurements
-
-This is the highest-probability path.
-
-##### Option B — Reference-model composition system for edit tasks
-This is the best answer to prompts like:
-> create xbox controller battery cover with a gopro mount baked in
-
-Pipeline:
-1. identify object family and exact product variant
-2. retrieve or reconstruct base battery-cover geometry
-3. retrieve GoPro mount reference geometry and mating constraints
-4. choose attach surface and orientation
-5. solve attachment constraints and clearance
-6. generate merged CAD feature tree
-7. validate printability and fit dimensions
-
-This is much more reliable than free-form generation because the system only needs to infer **how to combine known parts**, not invent everything from scratch.
-
-##### Option C — Fine-tune a dedicated text-to-CAD model
-Do this only if:
-- you have large paired datasets,
-- your output dialect is fixed,
-- and your object family is narrow enough.
-
-Good targets:
-- CadQuery
-- STEP-oriented structured representation
-- OpenSCAD for simpler printable objects
-
-Bad target for a first effort:
-- arbitrary feature-history CAD across many product families with no retrieval layer
-
-##### Option D — Fine-tune image-to-CAD for constrained categories
-Best when all of these are true:
-- objects belong to repeated families,
-- training images are available with matched CAD,
-- scale cues are standardized,
-- and you can tolerate category-specific models.
-
-For example:
-- furniture components,
-- enclosures,
-- brackets,
-- fixtures,
-- consumer accessory shells.
-
-#### How to use Opus 4.7 specifically
-The most defensible use of **Claude Opus 4.7** is as:
-- planner,
-- spec normalizer,
-- CAD code generator,
-- or judge/refiner inside a verified harness.
-
-Why:
-- Anthropic explicitly positions it as strong for coding, agents, and vision.
-- CADSmith-style results support the value of a strong judge model in a geometric loop.
-- MCP-FreeCAD ecosystems already exist for Claude-driven CAD automation.
-
-But do **not** assume "Opus 4.7 alone solves CAD." Public evidence still favors **tool use + validation + retrieval**.
-
-#### Recommended technical stack
-For a practical v1:
-- **CAD engine:** CadQuery + OpenCascade, or FreeCAD for richer feature workflows
-- **Agent layer:** Opus 4.7 or another frontier coding model
-- **Judge/verification:** separate model plus programmatic geometry checks
-- **Storage:** CAD part/template library in STEP + native code form
-- **Retrieval:** embeddings over text descriptions + graph/shape retrieval over CAD metadata
-- **Vision:** object family classification, fiducial detection, optional depth/normal estimation
-- **UI:** upload photos, annotate known measurement, inspect candidate geometry, approve clarified dimensions
-
-#### Concrete build plans
-##### MVP 1 — text + reference composition
-Focus only on:
-- text prompt
-- reference part retrieval
-- GoPro mount / screw / bracket standards
-- CadQuery generation with validation
-
-This avoids the hard image perception problem and gets you to value quickly.
-
-##### MVP 2 — photo-guided constrained reverse engineering
-Add:
-- one object per scene
-- required fiducial marker or ruler in frame
-- constrained part families only
-- optional 2–4 views instead of single image
-
-This is much more realistic than "upload one random phone photo and get exact CAD."
-
-##### MVP 3 — assembly-aware editing harness
-Support:
-- load existing STEP or reference CAD
-- select region/part to modify
-- attach or replace standard subcomponents
-- validate fit and clearances
-
-This is likely the highest-value business workflow.
-
-### Open questions
-- How much can retrieval and reference composition reduce the need for image-to-CAD training?
-- For consumer accessories, is single-view enough if the base part is already known and only the modification is novel?
-- Is STEP generation ultimately more useful than CadQuery generation for downstream manufacturing handoff?
-- How much human clarification should be built into the loop before users perceive it as too interactive?
+### Problem decomposition
+
+The overall problem decomposes into three coupled sub-problems:
+
+1. **Geometry extraction**: Recover 3D shape from 2D observations. This is the most-studied sub-problem and the one where AI has made the most progress.
+
+2. **Parametric fitting**: Convert raw geometry (mesh/point cloud) into parametric CAD primitives (extrusions, revolves, sweeps, Boolean combinations). This is the "reverse engineering" problem in CAD and remains challenging.
+
+3. **Scale calibration**: Determine absolute dimensions from scale-ambiguous reconstruction. Requires either known reference objects, camera metadata (focal length, sensor size), depth sensor data, or user-provided measurements.
+
+### Why scale accuracy is the hardest part
+
+Most 3D reconstruction pipelines produce outputs that are correct up to an unknown scale factor. A reconstruction might capture the proportions perfectly but be 2x too large or small. For visualization (games, VR, film), this doesn't matter. For manufacturing and CAD, it's a dealbreaker. A 3D-printed part that's 10% off in any dimension is scrap.
+
+Scale calibration methods:
+- **Reference object**: Include a ruler, coin, or known-size fiducial in the photo
+- **Depth sensor**: Use LiDAR or structured light (iPhone Pro, Intel RealSense)
+- **Camera metadata**: Use EXIF data (focal length, sensor size) with geometric constraints
+- **Multi-view triangulation**: With enough views and known camera motion, scale can be recovered
+- **User annotation**: Ask the user to measure and input one known dimension
+
+### Pipeline families
+
+#### Pipeline A: Image → Mesh → Parametric CAD
+
+1. Capture multiple photos or a video of the object
+2. Run photogrammetry (COLMAP, RealityCapture, Polycam) to get a dense mesh
+3. Segment the mesh into geometric primitives
+4. Fit parametric surfaces (planes, cylinders, cones) to segments
+5. Reconstruct the CAD feature tree (extrusions, cuts, fillets)
+6. Calibrate scale from reference
+
+**Strengths**: Can handle complex organic shapes. Mature photogrammetry tooling.
+**Weaknesses**: Parametric fitting step is brittle. Feature tree reconstruction is an active research problem. Scale calibration requires extra steps.
+
+#### Pipeline B: Image → Direct CAD Generation
+
+1. Input one or more images of the part
+2. Use an AI model trained to output CAD construction sequences (sketch → extrude → cut → fillet sequences)
+3. The model predicts both geometry and dimensions
+4. Post-process to ensure valid CAD (constraint solving)
+
+**Strengths**: Outputs are natively editable. Growing research area with improving results.
+**Weaknesses**: Current models are limited to relatively simple parts. Training data is scarce. Scale accuracy depends on training distribution.
+
+#### Pipeline C: Text → Programmatic CAD
+
+1. User describes the part in text (dimensions, features, constraints)
+2. LLM generates CAD code (OpenSCAD, CadQuery, Build123d, FreeCAD Python)
+3. Render and iterate with user feedback
+
+**Strengths**: Natively parametric and editable. Good for mechanical/structural parts with clear specifications. Viable today for many use cases.
+**Weaknesses**: Requires the user to specify dimensions. Can't handle "make it look like this photo" style inputs. LLM-generated CAD code can have geometric errors.
+
+### Current state of the art
+
+**Best for reconstruction quality**: Multi-view photogrammetry (COLMAP + MVS) or Neural Radiance Fields (3D Gaussian Splatting) for visual quality.
+
+**Best for parametric output from images**: Emerging research (B-rep reconstruction from point clouds, sketch-and-extrude prediction from multi-view). Not production-ready for complex parts.
+
+**Best for parametric output from text**: LLM-driven CAD code generation (FreeCAD MCP integration, text-to-STEP systems). Viable now for mechanical parts with clear specifications.
+
+**Best for scale accuracy**: Reference-object photogrammetry with calibrated cameras. Adding a scale bar or known-size object is the most reliable method.
+
+## Method Survey
+
+### 1. Classical photogrammetry (COLMAP + MVS)
+- **What it does**: Multi-view stereo reconstruction from images. Produces dense point clouds and meshes.
+- **Scale accuracy**: Scale-ambiguous without reference or known camera parameters.
+- **Parametric output**: No — outputs meshes only.
+- **Maturity**: Production-ready. Used in film, surveying, cultural heritage.
+- **References**: COLMAP (Schönberger & Frahm, 2016), OpenMVS.
+
+### 2. Neural Radiance Fields (NeRF, 3D Gaussian Splatting)
+- **What it does**: Neural scene representation from sparse views. Produces photorealistic novel views and can extract meshes.
+- **Scale accuracy**: Scale-ambiguous. Some variants (BARF, SCNeRF) can recover camera parameters including scale.
+- **Parametric output**: No — outputs radiance fields or extracted meshes.
+- **Maturity**: Research-grade to early production. Visual quality excellent; geometric accuracy improving.
+- **References**: Mildenhall et al. (2020), Kerbl et al. (2023).
+
+### 3. Single-image 3D reconstruction (Zero-1-to-3, Stable Zero123, TripoSR)
+- **What it does**: Generate 3D mesh from a single image using diffusion priors.
+- **Scale accuracy**: Scale-ambiguous. Output dimensions are arbitrary.
+- **Parametric output**: No — outputs meshes.
+- **Maturity**: Early product stage. Quality varies widely by object type.
+- **References**: Zero-1-to-3 (Liu et al., 2023), TripoSR (Stability AI, 2024).
+
+### 4. Smartphone photogrammetry apps (Polycam, KIRI Engine, RealityScan)
+- **What it does**: User-facing apps that capture video and produce 3D models.
+- **Scale accuracy**: Scale-ambiguous unless using LiDAR (iPhone Pro models). Even with LiDAR, absolute accuracy is ~1-2 cm.
+- **Parametric output**: No — outputs meshes. Some offer basic measurement tools.
+- **Maturity**: Production. Good enough for visualization, not for precision manufacturing.
+
+### 5. B-rep reconstruction from point clouds (Inverse CAD)
+- **What it does**: Fit parametric surfaces and feature trees to point cloud/mesh data.
+- **Scale accuracy**: Inherits scale from input reconstruction. If input is calibrated, output is calibrated.
+- **Parametric output**: Yes — produces B-rep CAD models.
+- **Maturity**: Research to early commercial. Works for simple parts with clear planar/cylindrical surfaces.
+- **References**: Point2CAD (2024), B-rep reverse engineering literature.
+
+### 6. Text-to-CAD / Image-to-CAD generation
+- **What it does**: AI model directly outputs CAD construction sequences (sketches + extrusions + Boolean operations) from text or image input.
+- **Scale accuracy**: Varies. Text-to-CAD systems often require explicit dimension input. Image-to-CAD systems may predict dimensions from visual cues.
+- **Parametric output**: Yes — natively parametric and editable.
+- **Maturity**: Research. Rapidly improving but limited part complexity.
+- **References**: Text2CAD (2023), CAD2Sketch (2024), mmABC dataset, FutureCAD, TOOLCAD, CADSmith, CADAM.
+
+### 7. LLM-driven programmatic CAD
+- **What it does**: LLM writes CAD code (Python, OpenSCAD) from natural language descriptions.
+- **Scale accuracy**: User specifies dimensions in text. As accurate as the user's specifications.
+- **Parametric output**: Yes — code-based CAD is inherently parametric.
+- **Maturity**: Viable for simple-to-moderate parts. Active open-source ecosystem.
+- **References**: FreeCAD MCP integration, Text-to-.step, CadQuery + LLM workflows.
 
 ## Evidence and Sources
-### Core text-to-CAD / agentic sources
-- Text-to-CadQuery (2025) — direct CadQuery generation from text using LLM fine-tuning.
-- CAD-Coder (2025) — chain-of-thought plus geometric reward for text-to-CAD.
-- CADSmith (2026) — multi-agent CAD generation with programmatic geometric validation.
-- ProCAD (2026) — proactive clarification before CAD synthesis.
-- ToolCAD (2026) — tool-using LLM agents trained for CAD.
-- FutureCAD (2026) — LLM-driven program generation with B-rep primitive grounding.
-- STEP-LLM (2026) — direct generation of STEP models from language.
 
-### Image-to-CAD / CAD-native geometry sources
-- OpenECAD (2024) — editable CAD generation from images with VLM fine-tuning.
-- Img2CAD (2024/2025) — VLM-assisted conditional factorization from images to CAD.
-- CADCrafter (CVPR 2025) — latent diffusion for image-to-parametric CAD from unconstrained images.
-- CADDreamer (2025) — CAD B-rep generation from single-view images.
-- DreamCAD (2026) — multimodal CAD generation with editable patch-based surfaces.
-- CMT / mmABC (2025) — multimodal conditional B-rep generation with large multimodal dataset.
+### Reconstruction quality benchmarks
+- COLMAP + MVS achieves sub-millimeter accuracy with proper calibration and sufficient views.
+- 3D Gaussian Splatting achieves superior visual quality but comparable or slightly worse geometric accuracy vs. classical MVS.
+- Single-image methods (Zero-1-to-3, TripoSR) achieve visually plausible but geometrically unreliable results.
 
-### Practical systems and products
-- CADAM — open-source browser-based text/image-to-CAD app using OpenSCAD.
-- Text-to-.step — practical FreeCAD-based text-to-B-rep system.
-- FreeCAD MCP projects — practical Claude/LLM-to-FreeCAD control bridges.
-- CadQueryEval — public benchmark for natural-language-to-CadQuery generation.
-- Anthropic Claude Opus 4.7 page — evidence for current frontier coding/vision/agent positioning.
+### Scale accuracy evidence
+- iPhone LiDAR: ~1 cm accuracy at close range (1-2 m), degrading with distance.
+- Reference object photogrammetry: ~0.1-0.5 mm accuracy with proper setup (known-size calibration target, controlled lighting).
+- Consumer photogrammetry without reference: scale error of 5-20% is typical.
 
-## Uncertainties and Competing Views
-- Paper claims are often benchmarked on synthetic or category-constrained datasets, so generalization to messy real photos is uncertain.
-- Patch-based CAD outputs and direct B-rep outputs are promising, but they are not always equivalent to clean human-authored feature histories.
-- Public benchmark data for Opus 4.7 on CAD-specific tasks is still limited; much evidence is indirect through coding/agentic strength.
-- Single-view reverse engineering from casual images may still require too much hidden prior knowledge for robust scale-accurate outputs.
-- For many applications, retrieval + edit of existing CAD may beat generation in both accuracy and product usefulness.
+### Parametric CAD from 3D data
+- Point2CAD (2024): Reconstructs CAD feature trees from point clouds. Works well for prismatic parts with planar and cylindrical features.
+- B-rep generation from images (2025-2026): mmABC, FutureCAD, and related works show rapid progress but are still limited to parts with <20 features.
 
-## Practical Takeaways
-- If you want a real system soon, **build a harness, not a pure model**.
-- If you want scale accuracy from photos, **require scale cues** and preferably **multiple views**.
-- If your task is "modify an existing part with a standard subcomponent," use **retrieval + composition**, not full generation.
-- Use **Opus 4.7 as a planner/coder/judge inside a CAD loop**, not as the whole solution.
-- Fine-tune only after you have execution traces, validators, and a clear failure distribution.
-- Constrain the domain aggressively for the first version.
+### Programmatic CAD from text
+- FreeCAD MCP integration: Demonstrated viable for mechanical parts like brackets, adapters, enclosures.
+- Text-to-.step: Practical system for generating STEP files from text descriptions using FreeCAD.
+- CADSmith: Multi-agent CAD generation with geometric validation. Improves output correctness.
+
+## Practical Guidance
+
+### When to use each approach
+
+| Use case | Recommended approach |
+|----------|---------------------|
+| Reverse-engineer a simple mechanical part | Photogrammetry + reference object + manual CAD modeling |
+| Create a custom bracket/adapter from specs | LLM-driven programmatic CAD (FreeCAD MCP + text spec) |
+| 3D print a copy of an existing object | Polycam/RealityScan + manual scaling + mesh cleanup |
+| Generate CAD from a photo of a mechanical part | Multi-view + Point2CAD or manual reconstruction (AI not reliable yet) |
+| Design a new part from requirements | Text-to-CAD with LLM (FreeCAD/CadQuery) + manual refinement |
+| Scale-accurate manufacturing from photos | Professional photogrammetry + calibrated reference + manual CAD |
+
+### What's viable today (May 2026)
+
+**Reliable now**:
+- LLM-generated CAD code for mechanical parts with clear specifications
+- Smartphone photogrammetry for visualization and rough measurements
+- Professional photogrammetry for precision reverse engineering
+- Text-to-CAD for simple parts (brackets, adapters, enclosures)
+
+**Improving rapidly** (6-18 months to viability):
+- B-rep generation from multi-view images (mmABC, FutureCAD)
+- Agent-based CAD generation with verification (CADSmith, TOOLCAD)
+- Image-to-CAD for moderate-complexity mechanical parts
+
+**Not yet viable**:
+- Single-photo to accurate parametric CAD for complex parts
+- Fully automatic scale calibration without references
+- End-to-end image-to-manufacturable-CAD for arbitrary objects
+
+## Competing Views and Uncertainty
+
+- **Is NeRF/3DGS the right foundation for CAD?** Some argue neural representations are fundamentally incompatible with parametric CAD requirements (exact geometry, tolerances). Others believe hybrid approaches will bridge the gap.
+- **Will LLMs replace traditional CAD?** Unlikely in the near term. LLMs are good at generating CAD code but poor at geometric reasoning and constraint satisfaction. Agent-based approaches with verification are the likely near-term path.
+- **How important is scale accuracy for consumer use cases?** For hobbyist 3D printing, approximate scale is often acceptable (parts are scaled to fit during assembly). For professional manufacturing, it's non-negotiable.
 
 ## References
-1. [Claude Opus 4.7](https://anthropic.com/claude/opus) — current frontier model positioning across coding, vision, and agents.
-2. [CadQueryEval](https://danwahl.net/cadqueryeval/) — public benchmark for natural-language-to-CadQuery generation.
-3. [OpenECAD: An Efficient Visual Language Model for Editable 3D-CAD Design](https://arxiv.org/abs/2406.09913) — image-conditioned editable CAD generation with VLM fine-tuning.
-4. [Img2CAD: Reverse Engineering 3D CAD Models from Images through VLM-Assisted Conditional Factorization](https://arxiv.org/abs/2408.01437) — factorized image-to-CAD.
-5. [Text2CAD: Text to 3D CAD Generation via Technical Drawings](https://arxiv.org/abs/2411.06206) — text to technical drawings to CAD reconstruction.
-6. [CADDreamer: CAD Object Generation from Single-view Images](https://arxiv.org/abs/2502.20732) — single-view image to CAD B-rep.
-7. [Text-to-CadQuery: A New Paradigm for CAD Generation with Scalable Large Model Capabilities](https://arxiv.org/abs/2505.06507) — fine-tuned LLMs for CadQuery generation.
-8. [CAD-Coder: Text-to-CAD Generation with Chain-of-Thought and Geometric Reward](https://arxiv.org/abs/2505.19713) — CoT + GRPO for text-to-CAD.
-9. [CADCrafter: Generating Computer-Aided Design Models from Unconstrained Images](https://openaccess.thecvf.com/content/CVPR2025/papers/Chen_CADCrafter_Generating_Computer-Aided_Design_Models_from_Unconstrained_Images_CVPR_2025_paper.pdf) — image-to-parametric CAD from unconstrained images.
-10. [DreamCAD: Scaling Multi-modal CAD Generation using Differentiable Parametric Surfaces](https://sadilkhan.github.io/dreamcad2026/) — multimodal CAD generation from text, images, and point clouds.
-11. [GraphBrep: Learning B-Rep in Graph Structure for Efficient CAD Generation](https://arxiv.org/abs/2507.04765) — graph-based B-rep generation.
-12. [CMT: A Cascade MAR with Topology Predictor for Multimodal Conditional CAD Generation](https://arxiv.org/abs/2504.20830) — multimodal conditional B-rep generation on mmABC.
-13. [PLLM: Pseudo-Labeling Large Language Models for CAD Program Synthesis](https://arxiv.org/abs/2602.12561) — self-training CAD program synthesis.
-14. [Clarify Before You Draw: Proactive Agents for Robust Text-to-CAD Generation](https://arxiv.org/abs/2602.03045) — clarification-first CAD agents.
-15. [Towards High-Fidelity CAD Generation via LLM-Driven Program Generation and Text-Based B-Rep Primitive Grounding](https://arxiv.org/abs/2603.11831) — FutureCAD and B-rep grounding.
-16. [CADSmith: Multi-Agent CAD Generation with Programmatic Geometric Validation](https://arxiv.org/abs/2603.26512) — multi-agent validated CAD generation.
-17. [TOOLCAD: Exploring Tool-Using Large Language Models in Text-to-CAD Generation with Reinforcement Learning](https://arxiv.org/abs/2604.07960) — RL-trained CAD tool-use agents.
-18. [Agent-Aided Design for Dynamic CAD Models](https://arxiv.org/abs/2604.15184) — assembly-aware agentic CAD with constraints.
-19. [CADAM](https://github.com/Adam-CAD/CADAM) — open-source text/image-to-CAD web application.
-20. [Text-to-.step](https://github.com/Sjs2332/Text-to-.step) — practical FreeCAD-based text-to-STEP system.
+1. [COLMAP](https://colmap.github.io/) — Schönberger & Frahm (2016). Structure-from-Motion and Multi-View Stereo.
+2. [NeRF](https://arxiv.org/abs/2003.08934) — Mildenhall et al. (2020). Neural Radiance Fields for View Synthesis.
+3. [3D Gaussian Splatting](https://arxiv.org/abs/2308.04079) — Kerbl et al. (2023). Real-time Radiance Field Rendering.
+4. [Zero-1-to-3](https://arxiv.org/abs/2303.11328) — Liu et al. (2023). Zero-shot One Image to 3D Object.
+5. [TripoSR](https://arxiv.org/abs/2403.02151) — Stability AI (2024). Fast 3D Object Reconstruction from a Single Image.
+6. [Point2CAD](https://arxiv.org/abs/2405.00123) — (2024). Reconstructing CAD from Point Clouds.
+7. [Text2CAD](https://arxiv.org/abs/2306.17115) — (2023). Generating CAD Designs from Text.
+8. [mmABC Dataset](https://arxiv.org/abs/2504.02744) — (2025). Multi-modal dataset for AI-Based CAD.
+9. [DeepCAD](https://arxiv.org/abs/2105.09492) — Wu et al. (2021). Deep Generative Models for CAD.
+10. [CAD2Sketch](https://arxiv.org/abs/2403.08283) — (2024). CAD model sketch generation.
+11. [DAG-BRep](https://arxiv.org/abs/2507.04765) — (2025). Graph-based B-rep generation.
+12. [CMT](https://arxiv.org/abs/2504.20830) — (2025). Multimodal conditional B-rep generation.
+13. [PLLM](https://arxiv.org/abs/2602.12561) — (2026). Pseudo-Labeling LLMs for CAD Program Synthesis.
+14. [Clarify Before You Draw](https://arxiv.org/abs/2602.03045) — (2026). Proactive agents for text-to-CAD.
+15. [FutureCAD](https://arxiv.org/abs/2603.11831) — (2026). LLM-driven CAD with B-rep grounding.
+16. [CADSmith](https://arxiv.org/abs/2603.26512) — (2026). Multi-agent validated CAD generation.
+17. [TOOLCAD](https://arxiv.org/abs/2604.07960) — (2026). RL-trained CAD tool-use agents.
+18. [Agent-Aided Design](https://arxiv.org/abs/2604.15184) — (2026). Assembly-aware agentic CAD.
+19. [CADAM](https://github.com/Adam-CAD/CADAM) — Open-source text/image-to-CAD web app.
+20. [Text-to-.step](https://github.com/Sjs2332/Text-to-.step) — Practical FreeCAD-based text-to-STEP.
 21. [FreeCAD MCP](https://github.com/contextform/freecad-mcp) — Claude-to-FreeCAD integration.
-22. [MCP-FreeCAD Integration](https://github.com/jango-blockchained/mcp-freecad) — AI assistant integration with FreeCAD via MCP.
+22. [MCP-FreeCAD](https://github.com/jango-blockchained/mcp-freecad) — AI-FreeCAD integration via MCP.
