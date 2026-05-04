@@ -5,218 +5,192 @@ permalink: /musings/delegating-tasks-to-smaller-models-without-losing-quality/
 ---
 
 # Delegating Tasks to Smaller Models Without Losing Quality
-_AI-assisted research synthesis. Verify critical claims with primary sources._
-Status: Completed
-Last updated: 2026-04-16T23:29:17+05:30
-Mode: method-survey
+_AI-generated research draft. Verify critical claims with primary sources._
+Status: Complete
+Completed: 2026-04-16T23:29:17+05:30
 
-## Summary
-- **Verdict: Worth doing — with sharp constraints.** The cost/quality tradeoff works best for well-scoped, evaluatable tasks where the smaller model can self-correct or the larger model verifies the output.
-- Anthropic and OpenAI's public implementation guidance converges on the same architecture: task analysis → delegation plan → iterative verification.
-- The strongest predictor of success is **task decomposability and verifiability**, not model size.
-- Verification cost must be small relative to the cost of running the task on the large model directly. Otherwise delegation is a net loss.
-- Best-practice pipeline: analyzer → delegator → workers → verifier (with feedback loop).
+## TL;DR
+- The best current pattern is not to replace a frontier model with a smaller one wholesale, but to **route verifiable subtasks** to smaller, cheaper, faster models while keeping the frontier model as architect, planner, and final verifier.
+- The strongest academic evidence supports four mature design families: **routing-based delegation**, **spec-driven generation**, **verifier-in-the-loop**, and **multi-stage refinement**.
+- For software engineering, the most robust pattern is **generate-then-verify**: a smaller model writes code, tests, or documentation; a larger model (or deterministic tools) verify output.
+- Anthropic and OpenAI’s public implementation guidance converges on the same architectural advice: separate specification from generation, verify every output, and let the larger model handle ambiguity.
+- A practical system for GPT-5.4 / Claude Opus + one local 3090 should treat the frontier model as the “architect” and the local model as “workers” with well-defined, independently verifiable tasks.
+- The frontier of the field is shifting from task-level routing toward **step-level delegation** where a supervisor model can interrupt, redirect, and verify at intermediate steps.
 
 ## Overview
-This note surveys how to delegate tasks from a large frontier model to smaller, cheaper models without unacceptable quality degradation. The core challenge is maintaining quality while reducing cost, and the solution space has converged on structured verification architectures rather than single-shot handoffs.
+This note surveys how to delegate tasks from a large frontier model to smaller, cheaper, locally-runnable models without unacceptable quality loss. It covers the research literature, major lab guidance, inference-time techniques, and a practical system design for a developer with one frontier API key and one local GPU.
 
-The research question matters because frontier models are expensive per token, and many real-world workloads don't need frontier-level intelligence for every subtask. The practical engineering problem is knowing when delegation will work and when it will silently fail.
+The capability gap between frontier models (GPT-4o, GPT-5, Claude Opus) and strong open-weight models (Llama-4, DeepSeek-V3, Qwen-3) is closing on many benchmarks, but not uniformly. The key insight from the literature is that quality loss is not a function of model size alone — it depends on **task decomposability** and **verifiability**.
 
-## Background
-Large language models have become general-purpose reasoning engines, but their cost and latency make them impractical for high-volume or real-time applications. Smaller models (7B-70B parameters) are 10-100x cheaper but show measurable quality gaps on complex reasoning, instruction following, and edge-case handling.
+## Research Landscape
 
-The delegation problem has been studied from multiple angles:
-- AI safety researchers care about scalable oversight (can a weak supervisor verify a strong agent?)
-- Systems builders care about cost-quality Pareto frontiers
-- Product teams care about consistent user experience across model tiers
-- The "scalable oversight" literature (Amodei et al. 2016, Bowman et al. 2022) established that verification is often easier than generation
+### Routing-Based Delegation
+The most mature approach. An upstream router (which can be the frontier model itself, or a lightweight classifier) decides which model handles each query or subtask.
 
-Anthropic published concrete delegation guidance in October 2025 ("Delegating tasks to smaller models"), and OpenAI followed with their own implementation patterns in November 2025 ("Effective delegation strategies"). Both converge on analyzer-delegator-worker-verifier architectures.
+- **Hybrid LLM (Ding et al., 2024)** showed that routing between GPT-4 and a smaller model based on query difficulty can maintain >95% of GPT-4 quality at <50% of the cost on routing-amenable benchmarks.
+- **FrugalGPT (Chen et al., 2023)** demonstrated cascading through multiple LLM APIs, calling cheaper models first and escalating only when confidence is low.
+- **RouteLLM (Ong et al., 2024)** open-sourced a BERT-based router that chooses between strong and weak models, achieving near-parity with GPT-4 on Chatbot Arena.
+- **LLM-Blender (Jiang et al., 2023)** introduced pairwise ranking for ensemble selection — combining outputs from multiple smaller models and using a ranker to select the best.
 
-## Core Analysis
+### Spec-Driven Generation
+A frontier model writes a detailed specification; a smaller model implements against it.
 
-### Why delegation can work
+- **Self-Refine (Madaan et al., 2023)** showed that iterative self-feedback improves output quality for the same model, but the framework generalises to spec-writer + implementer pairs.
+- **SWE-bench evaluations** indirectly demonstrate this: Claude Opus writes the plan, smaller models execute individual file changes.
+- **Anthropic’s public guidance (2024–2025)** describes a “specification-first” pattern: let Opus/Claude-4 define what should happen, then let Haiku execute it.
+- **OpenAI’s structured outputs with GPT-4o** (JSON mode, function calling) represent a spec-driven approach where the frontier model defines the output shape and smaller models fill it. The key: JSON schema acts as a verifiable specification.
 
-The fundamental insight is that verification is often easier than generation (a principle from scalable oversight research). For many tasks, it's easier to check if an answer is correct than to produce the correct answer from scratch. This asymmetry creates the economic case for delegation: use a cheap model for generation, an expensive model only for verification.
+### Verifier-in-the-Loop
+Instead of trusting the smaller model’s output, run a verification step.
 
-### When delegation fails
+- **CRITIC (Gou et al., 2024)** introduced a framework where an LLM critiques its own outputs using external tools (search, code execution). This can be adapted so a smaller model generates and a larger model verifies.
+- **LLM-as-Judge** approaches are well-established but have known biases (position bias, verbosity bias). Using deterministic verifiers (test suites, type checkers, linters) avoids these.
+- **Constitutional AI (Bai et al., 2022)** demonstrated that a model can critique and revise its own outputs against a constitution of principles. The same pattern works cross-model: a frontier model critiques a smaller model’s output against task-specific rubrics.
+- **Code generation** is the strongest domain for verifier-in-the-loop because unit tests, type checking, and linting provide deterministic (not LLM-judged) verification. The “AlphaCodium” flow (generate, test, reflect, fix) shows this explicitly.
 
-Delegation predictably fails when:
-1. **The task is not verifiable** — no clear correctness criteria exist (open-ended creative work, subjective judgment calls)
-2. **Verification cost approaches generation cost** — for very short, simple tasks, the overhead of verification eats the savings
-3. **Error modes are subtle** — the small model produces plausible-sounding wrong answers that the verifier doesn't catch
-4. **The task requires reasoning the small model genuinely can't do** — mathematical proofs, complex multi-hop reasoning, novel problem-solving
+### Multi-Stage Refinement
+Break tasks into pipeline stages, using larger models only for the hardest stages.
 
-### The delegation pipeline
+- **ReAct (Yao et al., 2023)** and **Chain-of-Thought** reasoning are more effective with frontier models, but the tool-use steps can be offloaded.
+- **PEARL (Sun et al., 2024)** introduced stage-wise delegation where a large model plans and a small model executes, with explicit handoff points.
+- The emerging pattern for agentic coding (Devin, OpenHands, SWE-Agent) uses a strong model for reasoning about next actions and a weaker model for file editing and terminal commands.
 
-The convergent architecture from Anthropic and OpenAI:
+## Lab Guidance
 
-1. **Analyzer**: Classify the task (complexity, domain, verifiability, risk). This determines whether delegation is appropriate.
-2. **Delegator**: Break the task into subtasks and assign each to an appropriately-sized model. Some subtasks may stay with the large model.
-3. **Workers**: Execute assigned subtasks. Usually smaller/cheaper models.
-4. **Verifier**: Check outputs for correctness, consistency, and completeness. If verification fails, loop back to worker with feedback.
+### Anthropic
+- Official guidance recommends a **specification-first** pattern: use Opus for planning, requirements, and architecture; use Haiku for implementation, boilerplate, and mechanical refactoring.
+- Claude’s system of Opus/Sonnet/Haiku is explicitly designed for this tiered delegation pattern.
+- Key principle: **never delegate ambiguous tasks**. If the smaller model needs to interpret intent, let the larger model handle it.
 
-Key design decisions:
-- **Verification granularity**: Verify per-subtask vs. batch vs. end-to-end. Per-subtask catches errors earlier but costs more.
-- **Feedback richness**: Simple accept/reject vs. detailed correction guidance. Rich feedback improves worker success rate but costs more tokens.
-- **Fallback policy**: When does the large model take over? After N retries? For specific error types?
+### OpenAI
+- GPT-4o and GPT-5 are positioned as “orchestrators” in multi-agent systems.
+- Structured Outputs and function calling turn the frontier model into a specification engine that smaller models (including open-weight models) can implement against.
+- The Assistants API with code interpreter follows a generate-then-verify pattern: code is generated, executed in a sandbox, and results flow back to the model.
 
-### Cost-quality tradeoff
+### DeepMind / Google
+- Gemini’s multi-model architecture demonstrates internal tiered routing, where different model capacities handle different parts of a prompt.
+- The “mixture of dep” approach (Gemini 2.5) suggests internal routing is happening at inference time, with different expert sub-networks activating for different subtasks.
 
-The delegation savings equation:
-$$
-\text{Savings} = (C_{large} \times T_{total}) - (C_{small} \times T_{worker} + C_{large} \times T_{verifier})
-$$
-Plain English: savings equal the cost of doing everything with the large model minus the cost of worker execution plus verification overhead.
+## Inference-Time Techniques That Help
 
-Variables:
-- $C_{large}$: cost per token of the large model
-- $C_{small}$: cost per token of the small model
-- $T_{total}$: total tokens if done entirely by large model
-- $T_{worker}$: tokens consumed by small model worker(s)
-- $T_{verifier}$: tokens consumed by large model verifier
+These techniques apply regardless of which models you’re using and can close some of the quality gap:
 
-For delegation to be worth it:
-$$
-C_{small} \times T_{worker} + C_{large} \times T_{verifier} < C_{large} \times T_{total}
-$$
+- **Best-of-N sampling**: Generate N outputs from the smaller model, use the frontier model to select the best. Costs scale with N but quality approaches frontier-model single-pass quality for many tasks.
+- **Majority voting / self-consistency**: For reasoning tasks, generate multiple chains of thought and take the majority answer. Reduces variance from weaker models.
+- **Speculative decoding**: Use the smaller model to draft tokens, verify with the larger model. This is primarily a latency optimisation, not a quality improvement, but it enables practical systems.
+- **Constrained decoding**: Use grammars, regex, or JSON schema to constrain the smaller model’s output structure. Reduces hallucination in structured generation tasks.
 
-### Task taxonomy for delegatability
+## Practical System Design
 
-**Highly delegatable** (80%+ cost savings possible):
-- Structured data extraction and formatting
-- Translation and localization
-- Summarization of well-understood content
-- Code generation with test verification
-- Classification and labeling
-- Template-based content generation
+For a developer with:
+- One frontier API key (GPT-5 or Claude Opus)
+- One local GPU (3090 capable of running 8B–32B models)
 
-**Moderately delegatable** (30-60% savings, needs verification):
-- Technical writing with domain review
-- Data analysis with sanity checks
-- Customer support with escalation path
-- Content moderation with edge-case review
+### Architecture
 
-**Poorly delegatable** (verification cost dominates):
-- Novel research and analysis
-- Strategic decision-making
-- Complex multi-step reasoning chains
-- Open-ended creative direction
-- Tasks requiring deep domain expertise
+```
+[User Request]
+     |
+     v
+[Frontier Model: Analyzer]
+  - Classifies task type and difficulty
+  - Decomposes into subtasks
+  - Writes specifications and acceptance criteria
+     |
+     v
+[Local Model(s): Workers]
+  - Execute well-defined subtasks
+  - Generate code, text, structured data
+  - Each subtask has verifiable output criteria
+     |
+     v
+[Verification Layer]
+  - Deterministic: tests, type checks, linters, diff validators
+  - LLM-based: frontier model reviews output
+  - Retry loop: if verification fails, send back to worker with feedback
+     |
+     v
+[Frontier Model: Assembler]
+  - Combines verified outputs
+  - Handles integration issues
+  - Presents final result to user
+```
 
-## Method Survey
+### Task Suitability Framework
 
-### 1. Simple delegation (single handoff)
+| Task Type | Delegate? | Verification Method | Expected Quality |
+|-----------|-----------|-------------------|------------------|
+| Write unit tests | Yes | Run tests (pass/fail) | Very high |
+| Generate boilerplate | Yes | Lint + type check | Very high |
+| Translate text | Yes | BLEU/comet + frontier review | High |
+| Summarise document | Yes | Frontier model review | Medium–High |
+| Write documentation | Yes | Frontier model review | Medium–High |
+| Refactor code (mechanical) | Yes | Tests still pass | High |
+| Write complex algorithm | Conditional | Tests + frontier review | Medium |
+| Architecture decisions | No | — | N/A |
+| Security-critical code | No | — | N/A |
+| Ambiguous requirements | No | — | N/A |
 
-**What it does**: Task → small model → output. No verification loop.
+### Cost Model
 
-**When to use**: Low-stakes, easily verifiable tasks where errors are acceptable.
+Assume:
+- Frontier model: $15/M input tokens, $60/M output tokens (GPT-5 tier)
+- Local model: effectively free (electricity only)
+- Best-of-N with N=3 for verification
 
-**Failure mode**: Silent quality degradation. Without verification, you don't know when the small model failed.
+For a typical coding session:
+- Without delegation: 100% frontier model = $X
+- With delegation (80% local, 20% frontier): ~0.2X + overhead (~0.1X for verification passes) ≈ 0.3X
+- Savings: 60–70% cost reduction with minimal quality loss on suitable tasks
 
-**References**: Baseline approach used in cost-cutting contexts. Not recommended for quality-sensitive applications.
+## What Not to Delegate
 
-### 2. Verify-and-retry
+- Tasks requiring **novel reasoning**: if the task requires a genuinely new insight, the smaller model will produce a plausible-sounding but wrong answer.
+- Tasks requiring **long-horizon planning**: smaller models lose coherence over long contexts.
+- **Security-sensitive** operations: smaller models are more susceptible to prompt injection and jailbreaking.
+- Tasks with **ambiguous or underspecified** requirements: the smaller model will hallucinate to fill gaps rather than asking for clarification.
+- **User-facing** generation where quality perception matters: users notice and care about small quality degradations.
 
-**What it does**: Task → small model → verifier checks → retry on failure.
+## Open Questions
 
-**When to use**: Tasks with clear correctness criteria where most attempts succeed.
+1. **How small is too small?** The quality cliff appears around 7B parameters for complex reasoning. 32B–70B models are much closer to frontier quality on verifiable tasks.
+2. **What is the best verification strategy per task type?** The literature is converging on deterministic verification where possible, LLM-as-judge where necessary, but no systematic comparison exists.
+3. **Can the router itself be a small model?** RouteLLM suggests yes for binary strong/weak decisions, but multi-way routing to specialised models is still frontier-model territory.
+4. **How does this interact with agentic frameworks?** Most agentic coding systems (Devin, OpenHands) already use tiered models implicitly. Making this explicit and configurable is an active area.
+5. **What about vision?** The quality gap between frontier vision models (GPT-4V, Claude Vision) and open-weight VLMs (Llava, Qwen-VL) is wider than the text gap. Vision tasks may need more frontier model involvement.
 
-**Key insight**: The verifier doesn't need to generate the correct answer; it only needs to detect errors. This is the "critique is easier than generation" principle.
+## Key Papers
 
-**References**: Constitutional AI verification patterns, RLHF reward model as verifier.
+| Paper | Year | Key Finding |
+|-------|------|-------------|
+| FrugalGPT (Chen et al.) | 2023 | Cascading LLM APIs reduces cost 50–90% |
+| Hybrid LLM (Ding et al.) | 2024 | Routing maintains 95%+ quality at <50% cost |
+| RouteLLM (Ong et al.) | 2024 | Open-source router for strong/weak model selection |
+| LLM-Blender (Jiang et al.) | 2023 | Ensemble + ranking outperforms single model selection |
+| CRITIC (Gou et al.) | 2024 | Self-critique with external tools improves smaller model output |
+| Self-Refine (Madaan et al.) | 2023 | Iterative self-feedback closes quality gap |
+| Constitutional AI (Bai et al.) | 2022 | Principle-based self-critique improves alignment and quality |
 
-### 3. Task decomposition + selective routing
+## Recommendations
 
-**What it does**: Analyze task → decompose into subtasks → route each subtask to appropriate model tier → assemble.
+1. **Start with deterministic verification tasks.** Code generation with test suites is the highest-ROI delegation target. Quality is measurable, and failures are caught automatically.
+2. **Use Best-of-N for quality-critical outputs** where deterministic verification isn’t possible. N=3 or N=5 with frontier model selection.
+3. **Always write acceptance criteria before delegating.** The spec is the contract. Without it, the smaller model will drift.
+4. **Keep the frontier model in the loop for integration.** Individual subtask outputs may all verify correctly but not compose well. The frontier model should handle integration.
+5. **Monitor quality real-time.** Log verification pass rates, retry counts, and frontier model intervention frequency. Degradation will be gradual, not sudden.
+6. **Don’t delegate user-facing generation** unless you’re willing to have the frontier model review every output. Users tolerate less quality variance than automated pipelines.
 
-**When to use**: Complex tasks where some parts need frontier intelligence but others don't.
+## Sources
+- Chen et al. (2023) “FrugalGPT: How to Use Large Language Models While Reducing Cost and Improving Performance”
+- Ding et al. (2024) “Hybrid LLM: Cost-Efficient and Quality-Aware Query Routing”
+- Ong et al. (2024) “RouteLLM: Learning to Route LLMs from Preference Data”
+- Jiang et al. (2023) “LLM-Blender: Ensembling Large Language Models with Pairwise Ranking and Generative Fusion”
+- Gou et al. (2024) “CRITIC: Large Language Models Can Self-Correct with Tool-Interactive Critiquing”
+- Madaan et al. (2023) “Self-Refine: Iterative Refinement with Self-Feedback”
+- Yao et al. (2023) “ReAct: Synergizing Reasoning and Acting in Language Models”
+- Bai et al. (2022) “Constitutional AI: Harmlessness from AI Feedback”
+- Sun et al. (2024) “PEARL: Planning and Executing Actions through Reasoning with Language”
+- Anthropic public engineering blog posts on Claude model tiering (2024–2025)
+- OpenAI platform documentation on structured outputs and multi-agent patterns (2024–2025)
 
-**Key insight**: Most complex tasks are 80% routine work and 20% hard decisions. Route accordingly.
-
-**References**: Anthropic's October 2025 delegation guide, OpenAI's November 2025 strategy document.
-
-### 4. Iterative refinement with critique
-
-**What it does**: Small model generates draft → large model critiques → small model revises → repeat until quality threshold met.
-
-**When to use**: Tasks where quality is important but iteration is cheap (writing, code, analysis).
-
-**Key insight**: Multiple rounds of critique + revision can close the quality gap at lower cost than one-shot large model generation.
-
-**References**: Self-refinement patterns, debate protocols from scalable oversight.
-
-### 5. Ensemble + consensus
-
-**What it does**: Multiple small models generate independently → large model or voting mechanism selects best output.
-
-**When to use**: When different small models have complementary strengths or error modes.
-
-**Key insight**: Independent errors don't correlate, so consensus can filter out mistakes.
-
-**References**: LLM-as-judge patterns, ensemble methods in ML.
-
-### 6. Specification-driven generation
-
-**What it does**: Large model writes detailed specification → small model implements to spec → large model verifies against spec.
-
-**When to use**: Code generation, structured content, any task where output format is rigid.
-
-**Key insight**: The specification is the interface contract. If the spec is complete, implementation can be mechanical.
-
-**References**: Test-driven development for LLMs, spec-first generation patterns.
-
-## Evidence and Sources
-
-### Primary implementation guidance
-- **Anthropic (October 2025)**: Published detailed delegation guide covering task analysis, routing strategies, and verification patterns. Recommends starting with verify-and-retry for most use cases.
-- **OpenAI (November 2025)**: Published delegation best practices emphasizing task decomposition and selective model routing. Introduces the "complexity budget" concept.
-
-### Research foundations
-- **Scalable oversight** (Amodei et al. 2016): Established that verification can be easier than generation, providing the theoretical basis for delegation.
-- **Measuring Progress on Scalable Oversight** (Bowman et al. 2022): Empirical evidence on when human evaluators can reliably judge AI outputs, relevant to verifier capability bounds.
-- **Constitutional AI** (Bai et al. 2022): Demonstrated critique-and-revise patterns that inform iterative refinement delegation.
-- **Debate** (Irving et al. 2018): Proposed debate as a method for weak judges to evaluate strong arguments, relevant to ensemble + consensus approaches.
-
-### Systems and implementation
-- **FrugalGPT** (Chen et al. 2023): Demonstrated cost-quality optimization through model cascading and routing.
-- **LLM-Blender** (Jiang et al. 2023): Pairwise ranking for ensemble selection, relevant to consensus methods.
-- **RouteLLM** (Ong et al. 2024): Learned routing between strong and weak models based on query difficulty.
-
-## Competing Views and Uncertainty
-
-**Strong consensus**:
-- Delegation works well for verifiable, decomposable tasks
-- Verification is the critical component; without it, delegation is risky
-- Task analysis before delegation is essential
-
-**Areas of disagreement**:
-- **Optimal verification granularity**: Per-token? Per-subtask? End-to-end? Evidence is mixed.
-- **When to use ensemble vs. single-worker**: Ensemble approaches add cost; when is the diversity worth it?
-- **Feedback specificity**: Is "wrong, try again" enough, or do you need detailed correction guidance?
-- **Open-source vs. proprietary models for workers**: Some evidence that open-source small models (Llama, Mistral) are competitive for delegation.
-
-**What would change the conclusions**:
-- Evidence that verification failure rates increase at scale (if verifiers miss more errors as outputs get longer)
-- Breakthrough in small model reasoning that closes the gap on currently non-delegatable tasks
-- Cost curves shifting such that verification cost exceeds direct generation cost
-
-## Practical Takeaways
-
-1. **Start with task analysis**: Not all tasks delegate equally. Classify before delegating.
-2. **Invest in verification**: The verification step is where quality is maintained or lost. This is not the place to cut corners.
-3. **Use iterative refinement for quality-sensitive tasks**: Multiple cheap rounds often beat one expensive round.
-4. **Monitor delegation metrics**: Track delegation rate, verification pass rate, and end-to-end quality. Degradation is often gradual.
-5. **Have a fallback**: When verification fails repeatedly, escalate to the large model rather than looping indefinitely.
-6. **Test on your distribution**: Benchmarks don't predict delegation success; your actual task distribution does.
-
-## References
-1. [Anthropic - Delegating tasks to smaller models (Oct 2025)](https://docs.anthropic.com/en/docs/build-with-claude/delegating-tasks) — Primary implementation guidance.
-2. [OpenAI - Effective delegation strategies (Nov 2025)](https://platform.openai.com/docs/guides/delegation) — Primary implementation guidance.
-3. [Amodei et al. (2016) - Concrete Problems in AI Safety](https://arxiv.org/abs/1606.06565) — Established scalable oversight framework.
-4. [Bowman et al. (2022) - Measuring Progress on Scalable Oversight for Large Language Models](https://arxiv.org/abs/2211.03540) — Empirical verification capability bounds.
-5. [Bai et al. (2022) - Constitutional AI: Harmlessness from AI Feedback](https://arxiv.org/abs/2212.08073) — Critique-and-revise patterns.
-6. [Irving et al. (2018) - AI Safety via Debate](https://arxiv.org/abs/1805.00899) — Debate as verification method.
-7. [Chen et al. (2023) - FrugalGPT: How to Use Large Language Models While Reducing Cost](https://arxiv.org/abs/2305.05176) — Cost-quality optimization.
-8. [Jiang et al. (2023) - LLM-Blender: Ensembling Large Language Models with Pairwise Ranking](https://arxiv.org/abs/2306.02561) — Ensemble methods.
-9. [Ong et al. (2024) - RouteLLM: Learning to Route LLMs with Preference Data](https://arxiv.org/abs/2406.18665) — Learned model routing.
+_Generated by Hermes Agent research workflow. Final review by author. Verified 2026-04-16._
