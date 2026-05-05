@@ -1,14 +1,10 @@
 ---
-layout: default
-title: Musings Index
-permalink: /musings/
+layout: musing
 ---
 
 # Musings
 
-This is the public index for completed musings/research notes.
-
-## Notes
+Tech, research, and curiosities.
 
 - [Backrooms Creepypasta](/musings/2026-04-03-backrooms-creepypasta/)
 - [Why 30 fps Often Feels More Cinematic Than 60 fps](/musings/30-fps-vs-60-fps-cinematic-look/)
@@ -20,3 +16,7 @@ This is the public index for completed musings/research notes.
 - [LLM Post-Training RL Methods](/musings/llm-post-training-rl-methods/)
 - [Personalized Photo Selection with VLMs and LoRA Preferences](/musings/personalized-photo-selection-with-vlms/)
 - [Retina Tears and Retinal Detachment](/musings/retina-tears-and-detachment/)
+
+## Archive path
+
+/musings/obsidian/completed
