@@ -5,10 +5,10 @@ Last updated: 2026-04-19T18:48:28+05:30
 Mode: method-survey
 
 ## Summary
-- **Verdict: Only worth doing if you constrain the scope to mechanical/product-style objects and build a harness around strong existing models plus CAD tools.** It is **probably not worth doing** as a pure end-to-end "any image or words to perfect parametric CAD" model project today.
+- **Verdict: Only worth doing if you constrain the scope to mechanical/product-style objects and build a harness around strong existing models plus CAD tools.** It is **probably not worth doing** as a pure end-to-end “any image or words to perfect parametric CAD” model project today.
 - The most realistic architecture is **not** a single generative model. It is a **multimodal CAD agent stack**: perception -> scale estimation -> retrieval of reference parts/templates -> CAD program synthesis -> geometry validation -> repair loop.
 - For **text-only** generation, the field is moving fast and tool-using LLM systems are already competitive. For **image-to-parametric CAD**, the problem is much harder, and single-image exact recovery remains fragile unless the object family is constrained.
-- If you want outputs like "Xbox controller battery cover with a GoPro mount baked in," the best path is a **reference-model composition harness** with part retrieval and constraint-based merging, not pure text-to-geometry generation.
+- If you want outputs like “Xbox controller battery cover with a GoPro mount baked in,” the best path is a **reference-model composition harness** with part retrieval and constraint-based merging, not pure text-to-geometry generation.
 - Frontier models such as **Claude Opus 4.7** look promising for planning, tool use, and code generation, but the strongest public evidence still supports using them inside a **verified CAD loop**, not trusting them as one-shot CAD generators.
 
 ## Overview
@@ -20,7 +20,7 @@ into **scale-accurate, editable parametric 3D models**.
 
 The target here is not generic mesh output. It is closer to **real CAD**: B-rep solids, CAD command programs, or other structured parametric representations that can be modified, measured, and manufactured.
 
-That distinction matters. A large fraction of "text-to-3D" and "image-to-3D" progress is aimed at meshes, NeRFs, Gaussian splats, or visually plausible shapes. Those are useful for graphics, but they are not good enough when you need dimensioned, editable parts with manufacturable geometry.
+That distinction matters. A large fraction of “text-to-3D” and “image-to-3D” progress is aimed at meshes, NeRFs, Gaussian splats, or visually plausible shapes. Those are useful for graphics, but they are not good enough when you need dimensioned, editable parts with manufacturable geometry.
 
 ## Background
 There are now several overlapping research directions:
@@ -44,7 +44,7 @@ This makes CAD much less forgiving than code generation or mesh generation.
 For your use case, there are three especially important distinctions:
 1. **Image-to-3D is not image-to-CAD.** A good mesh prior is not the same as a good parametric model.
 2. **Single-view estimation is not scale-accurate reverse engineering.** Scale needs explicit cues or calibrated measurement.
-3. **Assembly/edit tasks are not object generation tasks.** "Battery cover with a GoPro mount" is better framed as template retrieval + constrained composition than as fully novel generation.
+3. **Assembly/edit tasks are not object generation tasks.** “Battery cover with a GoPro mount” is better framed as template retrieval + constrained composition than as fully novel generation.
 
 ## Core Analysis
 ### Problem framing
@@ -208,13 +208,13 @@ These are among the clearest signals that **code-first CAD generation** is a ser
 This is a strong argument that if your target output is parametric CAD, **choosing the right output language matters more than trying to train a generic 3D model first**.
 
 #### ProCAD and clarification-first systems
-ProCAD is especially relevant to your use case because natural language CAD requests are often incomplete. For example, "Xbox controller battery cover with a GoPro mount" leaves many questions open:
+ProCAD is especially relevant to your use case because natural language CAD requests are often incomplete. For example, “Xbox controller battery cover with a GoPro mount” leaves many questions open:
 - which controller generation?
 - which mount standard?
 - exact attachment position?
 - target wall thickness and printing constraints?
 
-The paper's core insight is correct: **do not hallucinate missing dimensions**. Ask or infer only where justified.
+The paper’s core insight is correct: **do not hallucinate missing dimensions**. Ask or infer only where justified.
 
 #### CADSmith-style harnesses
 CADSmith is one of the strongest current signals for your question because it argues directly for a **harness over fine-tuning** in many practical settings. It uses:
@@ -235,7 +235,7 @@ These show that image-conditioned parametric CAD is becoming real, but also expo
 - factorization and geometry-aware conditioning are crucial
 - single-view reverse engineering is still difficult
 
-The main lesson is not "a foundation model will solve this end-to-end." The lesson is that **image-to-CAD needs decomposition, geometry priors, and strong validation**.
+The main lesson is not “a foundation model will solve this end-to-end.” The lesson is that **image-to-CAD needs decomposition, geometry priors, and strong validation**.
 
 #### DreamCAD and parametric surface generation
 DreamCAD is impressive because it claims multimodal CAD generation from text, images, and point clouds with editable patch-based surfaces and STEP output. But its representation is still not the same as a feature-history CAD model. It is closer to a CAD-friendly surface generator than to a fully faithful editable design history.
@@ -293,7 +293,7 @@ This mirrors what the best current CAD papers are converging on: code-first gene
 
 More explicitly:
 - **Worth doing as a serious applied research / product prototype:** yes
-- **Worth doing as a broad "any photo or words to exact CAD" startup claim:** probably not
+- **Worth doing as a broad “any photo or words to exact CAD” startup claim:** probably not
 - **Worth doing for constrained families like mounts, covers, brackets, adapters, enclosures, battery doors, fixtures:** yes
 - **Worth doing if you need one-shot single-image exact reverse engineering of arbitrary objects:** no, not yet
 
@@ -388,7 +388,7 @@ Why:
 - CADSmith-style results support the value of a strong judge model in a geometric loop.
 - MCP-FreeCAD ecosystems already exist for Claude-driven CAD automation.
 
-But do **not** assume "Opus 4.7 alone solves CAD." Public evidence still favors **tool use + validation + retrieval**.
+But do **not** assume “Opus 4.7 alone solves CAD.” Public evidence still favors **tool use + validation + retrieval**.
 
 #### Recommended technical stack
 For a practical v1:
@@ -417,7 +417,7 @@ Add:
 - constrained part families only
 - optional 2–4 views instead of single image
 
-This is much more realistic than "upload one random phone photo and get exact CAD."
+This is much more realistic than “upload one random phone photo and get exact CAD.”
 
 ##### MVP 3 — assembly-aware editing harness
 Support:
@@ -469,7 +469,7 @@ This is likely the highest-value business workflow.
 ## Practical Takeaways
 - If you want a real system soon, **build a harness, not a pure model**.
 - If you want scale accuracy from photos, **require scale cues** and preferably **multiple views**.
-- If your task is "modify an existing part with a standard subcomponent," use **retrieval + composition**, not full generation.
+- If your task is “modify an existing part with a standard subcomponent,” use **retrieval + composition**, not full generation.
 - Use **Opus 4.7 as a planner/coder/judge inside a CAD loop**, not as the whole solution.
 - Fine-tune only after you have execution traces, validators, and a clear failure distribution.
 - Constrain the domain aggressively for the first version.
