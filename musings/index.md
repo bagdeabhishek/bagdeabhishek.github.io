@@ -6,6 +6,7 @@ layout: musing
 
 Tech, research, and curiosities.
 
+- [Text-to-CAD Method Survey: From Smartphone Photos to 3D-Printable Models](/musings/text-to-cad-method-survey/)
 - [Backrooms Creepypasta](/musings/2026-04-03-backrooms-creepypasta/)
 - [Why 30 fps Often Feels More Cinematic Than 60 fps](/musings/30-fps-vs-60-fps-cinematic-look/)
 - [Backrooms Creepypasta](/musings/backrooms-creepypasta/)
