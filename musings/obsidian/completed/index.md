@@ -1,6 +1,6 @@
 # Completed Notes (Archive Copy)
 
-Archived final versions of completed research notes. These match what's in the Obsidian vault `Completed/` directory.
+Raw archive copies of finalized research notes from the Obsidian vault.
 
 - [Backrooms Creepypasta](./2026-04-03 - Backrooms Creepypasta.md) — [Published](https://bagdeabhishek.github.io/musings/2026-04-03-backrooms-creepypasta/)
 - [Why 30 fps Often Feels More Cinematic Than 60 fps](./30-fps-vs-60-fps-cinematic-look.md) — [Published](https://bagdeabhishek.github.io/musings/30-fps-vs-60-fps-cinematic-look/)
@@ -13,5 +13,3 @@ Archived final versions of completed research notes. These match what's in the O
 - [Personalized Photo Selection with VLMs and LoRA Preferences](./personalized-photo-selection-with-vlms.md) — [Published](https://bagdeabhishek.github.io/musings/personalized-photo-selection-with-vlms/)
 - [Retina Tears and Retinal Detachment](./retina-tears-and-detachment.md) — [Published](https://bagdeabhishek.github.io/musings/retina-tears-and-detachment/)
 - [Text-to-CAD Method Survey: From Smartphone Photos to 3D-Printable Models](./text-to-cad-method-survey.md) — [Published](https://bagdeabhishek.github.io/musings/text-to-cad-method-survey/)
-
-Auto-generated. Vault local: `/home/hermes/Documents/ObsidianVault/Completed/`

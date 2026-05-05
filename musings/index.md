@@ -1,5 +1,6 @@
 ---
-layout: musing
+layout: default
+title: Musings
 ---
 
 # Musings
@@ -17,7 +18,3 @@ Tech, research, and curiosities.
 - [Personalized Photo Selection with VLMs and LoRA Preferences](/musings/personalized-photo-selection-with-vlms/)
 - [Retina Tears and Retinal Detachment](/musings/retina-tears-and-detachment/)
 - [Text-to-CAD Method Survey: From Smartphone Photos to 3D-Printable Models](/musings/text-to-cad-method-survey/)
-
-## Archive path
-
-/musings/obsidian/completed
