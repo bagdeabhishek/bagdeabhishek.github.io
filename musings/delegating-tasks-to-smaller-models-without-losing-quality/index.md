@@ -14,7 +14,7 @@ Mode: method-survey
 - The best current pattern is not to replace a frontier model with a smaller one, but to **split labor**: the stronger model plans, arbitrates, and handles edge cases, while the smaller model handles bounded, repetitive, or easily verified work.
 - The strongest academic evidence supports four mature design families: **routing**, **cascaded escalation**, **generate-then-verify**, and **task-specific distillation**. These methods can materially reduce cost while preserving quality when deferral and verification are well designed.
 - For software engineering, the most robust pattern is **generate-then-verify**: let the small model explore the repo, draft patches or tests, and perform first-pass review; then gate acceptance with executable checks and selective frontier-model review.
-- Anthropic and OpenAI’s public implementation guidance converges on the same architecture: **smaller/faster subagents for bounded work**, stronger models for coordination and ambiguous reasoning, plus heavy use of caching and evaluation.
+- Anthropic and OpenAI's public implementation guidance converges on the same architecture: **smaller/faster subagents for bounded work**, stronger models for coordination and ambiguous reasoning, plus heavy use of caching and evaluation.
 - A practical system for GPT-5.4 / Claude Opus + one local 3090 should treat the local model as a specialist worker, not a general autonomous engineer. The best first specializations are repo exploration, context compression, diff summarization, test drafting, triage, and first-pass review.
 - The frontier of the field is shifting from task-level routing toward **step-level** and **token-level** collaboration, where the larger model intervenes only on difficult subproblems or verifies speculative work from the smaller model.
 
@@ -28,7 +28,7 @@ The literature and provider documentation now point to a coherent answer. Qualit
 ## Background
 Modern model stacks face a widening performance-cost gap. Frontier models are excellent at coding, long-context synthesis, tool use, and ambiguous reasoning, but they are expensive and can be wasteful when applied to predictable or repetitive subroutines. At the same time, smaller or local models have improved enough that they can handle many support tasks well—especially when those tasks are narrow, repetitive, or structurally verifiable.
 
-This makes delegation attractive, but only under discipline. A weak system delegates too aggressively and quietly accumulates defects. A strong system narrows the smaller model’s scope, tracks when to defer, and validates outputs before acting on them.
+This makes delegation attractive, but only under discipline. A weak system delegates too aggressively and quietly accumulates defects. A strong system narrows the smaller model's scope, tracks when to defer, and validates outputs before acting on them.
 
 A useful mental model is:
 
@@ -42,7 +42,7 @@ That mental model is more faithful to current best practice than the more dramat
 ### Problem framing
 The deployment problem has three competing objectives:
 
-1. **Quality** — keep output quality close to the frontier model’s quality on the tasks that matter.
+1. **Quality** — keep output quality close to the frontier model's quality on the tasks that matter.
 2. **Cost and latency** — reduce token spend, wall-clock latency, and infrastructure overhead.
 3. **Operational reliability** — avoid silent failure modes, especially in software workflows where regressions may only appear later.
 
@@ -186,8 +186,6 @@ This family does not merely route between models. It teaches a smaller model to 
 - Broad autonomy.
 - Unstable or rapidly changing task distributions.
 
-OpenAI’s public optimization guidance explicitly supports this route. Their fine-tuning and distillation docs recommend taking a prompt that works well on a larger model, collecting successful outputs, and training a smaller model to mimic them. The OpenAI Cookbook distillation example shows a distilled `gpt-4o-mini` nearly matching `gpt-4o` on a narrow classification task after training on teacher outputs.
-
 #### 5. Step-level selective intervention
 This is a more frontier pattern. Instead of routing the whole task, the larger model intervenes only on hard steps.
 
@@ -208,15 +206,13 @@ This is a more frontier pattern. Instead of routing the whole task, the larger m
 **What it does not solve well**
 - Requires more sophisticated instrumentation and step-level confidence signals.
 
-Recent papers such as **SMART**, **Route-and-Reason**, and **Router-R1** point in this direction. They are early signs that the field is moving from “which model answers?” toward “which parts require the strongest model?”
-
 #### 6. Token-level collaboration and speculative decoding
 This is the cleanest theoretical example of small-large tandem collaboration.
 
 **What it does**
 - A small draft model proposes several next tokens.
 - The large target model verifies them.
-- The final output is guaranteed to match the target model’s distribution.
+- The final output is guaranteed to match the target model's distribution.
 
 **How it helps**
 - Speeds up inference without quality loss.
@@ -231,94 +227,27 @@ This is the cleanest theoretical example of small-large tandem collaboration.
 **What it does not solve well**
 - General task decomposition for agents.
 
-This family matters because it demonstrates the strongest form of “small model works, large model verifies.” NVIDIA’s official writing on speculative decoding and TensorRT-LLM makes the point crisply: a draft-target pattern can improve throughput while preserving output quality because the target model remains authoritative.
-
 ### Representative methods
 #### FrugalGPT
-FrugalGPT is one of the clearest early papers to make the problem operational. Its main contribution is not a single clever algorithm but a production-oriented reframing: LLM efficiency should be thought of in terms of **prompt adaptation**, **approximation**, and **cascades**. Its headline result—that orchestrated combinations can sometimes match the strongest model at dramatically lower cost—still shapes how many later systems are framed.
+FrugalGPT is one of the clearest early papers to make the problem operational. Its main contribution is not a single clever algorithm but a production-oriented reframing: LLM efficiency should be thought of in terms of **prompt adaptation**, **approximation**, and **cascades**.
 
 #### RouteLLM
-RouteLLM is especially important because it pushes routing beyond simple heuristics. The key idea is to train the router using preference data, not just benchmark labels. That matters because many real prompts are open-ended and don’t have a neat ground-truth answer. The transfer result is also important: if the router generalizes across strong/weak model pairs, then the routing logic may remain useful even as the backend model pool changes.
+RouteLLM is especially important because it pushes routing beyond simple heuristics. The key idea is to train the router using preference data, not just benchmark labels.
 
 #### Cascade-Aware Training
-Cascade-Aware Training makes an underappreciated point: the small model should not be optimized in isolation if it will operate inside a cascade. It should be trained with awareness of downstream capabilities and deferral behavior. This is highly relevant to any local-model project: if you fine-tune your 3090 model, you should train it for its role in the stack, not just for generic standalone accuracy.
-
-#### Assured LLM-Based Software Engineering
-This is the most directly relevant software-engineering framing in the source set. It argues that autonomous code improvement becomes much safer when every candidate change is passed through semantic filters and measurable non-regression checks. In other words, quality comes from the harness, not from model eloquence.
+Cascade-Aware Training makes an underappreciated point: the small model should not be optimized in isolation if it will operate inside a cascade. It should be trained with awareness of downstream capabilities and deferral behavior.
 
 ### Provider implementation strategies
 #### Anthropic
-Anthropic’s public implementation pattern is revealing. Their documentation and engineering posts consistently separate a stronger coordinator from cheaper workers.
-
-- Model guidance explicitly places cheaper Claude variants in high-volume and sub-agent roles.
-- Claude Code supports subagents with model-specific prompts and tool scopes.
-- Their engineering post on the Research system describes a lead-agent plus parallel-subagent pattern, where the gains come from context separation, parallelism, and better token spending—not from some mystical collective intelligence.
-
-That post is instructive for another reason: Anthropic openly notes that multi-agent systems spend many more tokens than a single chat interaction. This is a crucial warning. Delegation is not automatically efficient. It only pays off when the extra tokens buy better decomposition, parallelism, or verification.
-
-Anthropic’s policy work on trustworthy agents adds another important layer: failures often come from the harness, tool design, or runtime environment rather than the model alone. This supports a systems view of delegation.
+Anthropic's public implementation pattern is revealing. Their documentation and engineering posts consistently separate a stronger coordinator from cheaper workers. Claude Code supports subagents with model-specific prompts and tool scopes.
 
 #### OpenAI
-OpenAI’s public implementation guidance points to the same structure:
-
-- Codex supports explicit subagents and recommends stronger defaults for coordination and smaller models for bounded worker roles.
-- Prompt caching is automatic and highly emphasized, which matters because caching often saves more money than fancy routing logic at the beginning.
-- OpenAI’s optimization stack revolves around **evals → prompts → fine-tuning/distillation**, which is exactly the correct order for any serious delegation system.
-
-OpenAI’s open-weight `gpt-oss-20b` is also noteworthy. It is explicitly positioned for lower-latency local or specialized use cases, and it supports structured outputs, reasoning effort control, and agentic tooling. That makes it a plausible local specialist in a tandem system.
+OpenAI's Codex supports explicit subagents and recommends stronger defaults for coordination and smaller models for bounded worker roles. Caching and evaluation are core operational primitives.
 
 #### NVIDIA
-NVIDIA’s contribution is more on the infrastructure side. Their speculative decoding and TensorRT-LLM work shows how a draft-target system can achieve substantial throughput gains while preserving target-model output quality. This is directly relevant if your project eventually pushes toward serving-level tandem inference or token-level collaboration.
-
-### Code-backed implementation patterns
-#### Example 1: OpenAI-style custom worker in Codex
-Repo / docs: OpenAI Codex docs  
-Why this matters: it shows the production pattern of a stronger main agent delegating bounded work to a cheaper specialist.
-
-```toml
-L1: name = "docs_researcher"  # Define a dedicated bounded worker.
-L2: description = "Use the docs MCP server to confirm APIs and exact references."  # Make delegation trigger explicit.
-L3: model = "gpt-5.4-mini"  # Pin the worker to a cheaper/faster model.
-L4: model_reasoning_effort = "medium"  # Keep effort bounded for lightweight analysis.
-L5: sandbox_mode = "read-only"  # Restrict actions to safe exploration.
-L6: developer_instructions = "Use docs MCP, return concise answers, do not make code changes."  # Constrain the worker’s role.
-```
-
-The pattern is important: **bounded model, bounded tools, bounded goal**. That is how quality and cost are jointly preserved.
-
-#### Example 2: OpenAI distillation workflow
-Repo / docs: OpenAI Cookbook distillation example  
-Why this matters: it shows how to build a smaller specialist from larger-model outputs.
-
-```python
-L1: response = client.chat.completions.create(  # Call the teacher model.
-L2:     model="gpt-4o",  # Use the stronger model as the source of training traces.
-L3:     messages=messages,  # Run the task with the tuned prompt.
-L4:     store=True,  # Persist completions so they can later be distilled.
-L5:     metadata={"distillation": "wine-distillation"},  # Tag the dataset for later filtering.
-L6: )  # The stored, high-quality outputs become fine-tuning data for a smaller model.
-```
-
-The important pattern is not the specific dataset. It is the workflow: **get the strong prompt right first, collect only good traces, then distill**.
-
-#### Example 3: Local OpenAI-family specialist via `gpt-oss`
-Repo / docs: `openai/gpt-oss`  
-Why this matters: it shows that a local model can be wired into a broader coding stack as a specialist worker.
-
-```toml
-L1: [model_providers.local]  # Register a local inference provider.
-L2: name = "local"  # Give the provider a stable name.
-L3: base_url = "http://localhost:11434/v1"  # Point Codex-compatible tooling at the local server.
-L4: [profiles.oss]  # Create a profile for the open-weight worker.
-L5: model = "gpt-oss:20b"  # Use the local 20B open-weight specialist.
-L6: model_provider = "local"  # Route the workload to local inference.
-```
-
-This matters because it makes the hybrid stack concrete: local worker, frontier coordinator.
+NVIDIA's speculative decoding and TensorRT-LLM work shows how a draft-target system can achieve substantial throughput gains while preserving target-model output quality.
 
 ### Tradeoffs
-The main tradeoffs are not mysterious.
-
 #### What smaller models do well
 - Retrieval-like scanning.
 - Repetitive transforms.
@@ -345,103 +274,51 @@ The main tradeoffs are not mysterious.
 
 ### Practical guidance
 #### Best practical architecture for GPT-5.4 / Opus + one local 3090
-A realistic system on your stack should look like this:
-
-**Coordinator (frontier model)**
-- Task planning.
-- Deciding delegation structure.
-- Reviewing uncertain outputs.
-- Final pass on high-risk actions.
-
-**Local specialist (3090)**
-- Repo exploration and file ranking.
-- Context compression and diff summarization.
-- Test drafting.
-- Candidate patch drafting for routine changes.
-- Issue triage.
-- First-pass review comments.
-
-**Verifier layer**
-- Tests.
-- Type checks.
-- Linters.
-- Static analyzers.
-- Semantic filters.
-- Optional model-based judge.
-
-**Learning loop**
-- Track which delegated tasks are accepted, repaired, or rejected.
-- Turn accepted traces into local fine-tuning or distillation data.
-- Turn failures into eval cases.
+**Coordinator (frontier model)**: Task planning, delegation structure, reviewing uncertain outputs, final pass on high-risk actions.
+**Local specialist (3090)**: Repo exploration, context compression, diff summarization, test drafting, issue triage, first-pass review.
+**Verifier layer**: Tests, type checks, linters, static analyzers, semantic filters, optional model-based judge.
+**Learning loop**: Track accepted/repaired/rejected tasks, turn accepted traces into distillation data, turn failures into eval cases.
 
 #### Best first specializations for the local model
-If you want immediate leverage, do not start with "local autonomous coding agent." Start with these:
-
-1. **repo explorer / file ranker**
-2. **diff summarizer**
-3. **test drafter**
-4. **first-pass code reviewer**
-5. **issue / bug triager**
-6. **mechanical refactor worker**
-
-These are predictable enough to evaluate and frequent enough to justify specialization.
+1. repo explorer / file ranker
+2. diff summarizer
+3. test drafter
+4. first-pass code reviewer
+5. issue / bug triager
+6. mechanical refactor worker
 
 #### Local model choices for one 3090
-Based on current official model pages and practical fit:
-
-- **Qwen2.5-Coder-14B / 32B** — best coding-oriented local worker family from the currently inspected sources.
-- **DeepSeek-R1-Distill-Qwen-14B / 32B** — attractive if you want a more reasoning-heavy local reviewer or discriminator.
-- **gpt-oss-20b** — strong local OpenAI-family option for specialized or agentic bounded work.
-
-A sensible near-term pairing is:
-- `Qwen2.5-Coder-14B` or `32B` for generation/exploration,
-- `DeepSeek-R1-Distill-Qwen-14B` for reviewer/discriminator experiments,
-- with GPT-5.4 or Claude Opus as final arbiter.
+- Qwen2.5-Coder-14B / 32B
+- DeepSeek-R1-Distill-Qwen-14B / 32B
+- gpt-oss-20b
 
 ### Open questions
-Several research questions remain genuinely open.
-
-1. **How much should routing rely on learned confidence versus external verification?**  
-   Current evidence suggests external verification is safer, especially in software.
-
-2. **Can step-level intervention beat task-level routing in real engineering workflows?**  
-   Likely yes for some domains, but operational complexity rises sharply.
-
-3. **Can a small local model be trained to defer well, not just answer well?**  
-   Cascade-aware training suggests yes, but this is underexplored in coding-specific stacks.
-
-4. **What is the right role for LLM-as-judge in software?**  
-   It seems useful as a secondary signal, but not yet as a sole gate.
-
-5. **How should one evaluate delegation in software engineering?**  
-   Benchmark success is not enough. You need repository-specific evals that measure regressions, missed bugs, reviewer usefulness, and escalation efficiency.
+1. How much should routing rely on learned confidence versus external verification?
+2. Can step-level intervention beat task-level routing in real engineering workflows?
+3. Can a small local model be trained to defer well, not just answer well?
+4. What is the right role for LLM-as-judge in software?
+5. How should one evaluate delegation in software engineering?
 
 ## Evidence and Sources
 ### Routing and cascades
-- **FrugalGPT** — framed the cost problem in terms of prompt adaptation, approximation, and cascades.
-- **Hybrid LLM** — query-difficulty routing with a tunable quality target.
-- **RouteLLM** — preference-trained routers with strong cost-quality tradeoffs.
-- **Token-level uncertainty and beyond** — showed why generative deferral is harder than classification deferral.
-- **Cascade-Aware Training** — argued that the small model should be trained for its role in the cascade, not in isolation.
+- FrugalGPT — framed the cost problem in terms of prompt adaptation, approximation, and cascades.
+- Hybrid LLM — query-difficulty routing with a tunable quality target.
+- RouteLLM — preference-trained routers with strong cost-quality tradeoffs.
+- Token-level uncertainty and beyond — showed why generative deferral is harder than classification deferral.
+- Cascade-Aware Training — argued that the small model should be trained for its role in the cascade, not in isolation.
 
 ### Verification and software engineering
-- **Assured LLM-Based Software Engineering** — generate-and-test plus semantic filters.
-- **LLM-as-a-Judge in Software Engineering** — evidence that model-based judgment can correlate with humans, but is not a full substitute.
+- Assured LLM-Based Software Engineering — generate-and-test plus semantic filters.
+- LLM-as-a-Judge in Software Engineering — evidence that model-based judgment can correlate with humans, but is not a full substitute.
 
 ### Industrial implementation patterns
-- **Anthropic engineering post on multi-agent research** — orchestrator-worker architecture, gains from token budget and parallel context windows, explicit warnings about cost.
-- **Anthropic trustworthy agents post** — emphasized that harnesses, tools, and environments are part of agent quality and safety.
-- **OpenAI docs and cookbook** — subagents, evals, caching, and distillation as core operational primitives.
-- **NVIDIA speculative decoding** — strongest industrial example of quality-preserving small+large collaboration.
+- Anthropic engineering post on multi-agent research — orchestrator-worker architecture.
+- Anthropic trustworthy agents post — harnesses, tools, and environments are part of agent quality and safety.
+- OpenAI docs and cookbook — subagents, evals, caching, and distillation as core operational primitives.
+- NVIDIA speculative decoding — strongest industrial example of quality-preserving small+large collaboration.
 
 ## Uncertainties and Competing Views
-The main uncertainty is not whether delegation works at all, but how aggressive the delegation should be.
-
-A more optimistic view is that stronger local reasoning models and better routers may soon let most predictable engineering work stay local, with frontier models stepping in only occasionally.
-
-A more skeptical view is that many tasks that look predictable are secretly architecture-sensitive, and that strong benchmarks can hide costly silent failures. This skeptical view is especially persuasive in security review, concurrency, data migrations, and production incident response.
-
-Another uncertainty is whether the future belongs more to **trained routers** or to **verification-heavy pipelines**. The current evidence suggests that for software engineering, verification-heavy pipelines are the safer first move, while learned routing becomes more valuable after you have strong repository-specific eval data.
+The main uncertainty is not whether delegation works at all, but how aggressive the delegation should be. A more optimistic view is that stronger local reasoning models and better routers may soon let most predictable engineering work stay local. A more skeptical view is that many tasks that look predictable are secretly architecture-sensitive, and that strong benchmarks can hide costly silent failures.
 
 ## Practical Takeaways
 - Treat smaller models as **specialists**, not miniature general replacements for frontier models.

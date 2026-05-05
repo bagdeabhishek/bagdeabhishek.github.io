@@ -41,11 +41,11 @@ This is why a one-shot "aesthetic model" is usually the wrong mental model. Most
 
 ### Pipeline mental model
 The strongest pipeline is:
-1. **Pre-filter technical failures**
-2. **Group burst and duplicate candidates**
-3. **Apply generic ranking signals**
-4. **Apply user-specific reranking**
-5. **Expose review and feedback UI**
+1. Pre-filter technical failures
+2. Group burst and duplicate candidates
+3. Apply generic ranking signals
+4. Apply user-specific reranking
+5. Expose review and feedback UI
 
 That yields a final score such as:
 
@@ -76,141 +76,47 @@ Variables:
 
 ### Method families
 #### 1. Generic image aesthetics assessment
-**What it does:** learns broad visual quality or aesthetic preference from crowd-labeled datasets like AVA.
-
-**How it helps:** provides a strong prior for composition, overall appeal, and rough ordering.
-
-**Why it exists:** hand-crafted rules do not capture enough of what humans consider visually pleasing.
-
-**What it is good at:** giving a baseline notion of "generally strong photo."
-
-**What it does not solve well:** personal taste, burst selection, emotionally meaningful exceptions, and niche style preferences.
-
-Representative references:
-- AVA (CVPR 2012)
-- NIMA (2017)
-- IAA-LQ (2023)
+Learns broad visual quality or aesthetic preference from crowd-labeled datasets like AVA. Good for baseline scoring. Cannot handle personal taste, burst selection, or emotionally meaningful exceptions.
 
 #### 2. VLM-based aesthetics and quality transfer
-**What it does:** uses pretrained vision-language encoders such as CLIP or SigLIP as frozen or lightly adapted backbones for aesthetics and quality tasks.
-
-**How it helps:** pretrained representations capture semantics, subject salience, scene context, and higher-level compositional cues better than many older task-specific models.
-
-**Why it exists:** collecting large aesthetics labels is expensive; VL pretraining offers richer transferable features.
-
-**What it is good at:** low-data transfer, semantic awareness, and supporting downstream lightweight heads.
-
-**What it does not solve well:** direct alignment to one user's preference without extra supervision.
-
-Representative references:
-- VILA (2023)
-- CLIP Brings Better Features to Visual Aesthetics Learners (2023)
-- CLIP-IQA-era work
+Uses pretrained vision-language encoders such as CLIP or SigLIP as frozen or lightly adapted backbones. Rich representations capture semantics, subject salience, and compositional cues. Representative: VILA, CLIP-IQA-era work.
 
 #### 3. Personalized image aesthetic assessment
-**What it does:** adapts a generic aesthetics model to an individual user.
-
-**How it helps:** makes rankings closer to what the user would actually keep, share, or archive.
-
-**Why it exists:** average-crowd scores are not enough for real album curation.
-
-**What it is good at:** few-shot user adaptation when the user's preference has consistent patterns.
-
-**What it does not solve well:** cold start, sparse/noisy user labels, and fast-moving or contradictory taste.
-
-Representative references:
-- Personalized Image Aesthetics (ICCV 2017)
-- PARA (2022)
-- User-Guided PIAA via DRL (2021)
-- Task Vector Customization (2024)
-- VLM Latent PIAA (2026)
+Adapts a generic aesthetics model to an individual user. Good for few-shot adaptation. Representative: Personalized Image Aesthetics (ICCV 2017), PARA, Task Vector Customization, VLM Latent PIAA (2026).
 
 #### 4. Lightweight reranking vs LoRA adaptation
-**What it does:** compares two personalization strategies.
-- **Lightweight reranking** keeps the backbone fixed and learns a small user model on top.
-- **LoRA adaptation** changes some model weights using low-rank updates.
-
-**How it helps:** clarifies where to invest effort first.
-
-**Why it exists:** personalized data is usually tiny, so full-model adaptation is often overkill.
-
-**What it is good at:**
-- lightweight reranking: fast iteration, low compute, lower overfitting risk
-- LoRA: deeper feature adaptation when you have enough data and a strong reason to adapt the vision tower
-
-**What it does not solve well:**
-- lightweight reranking: may plateau if the backbone itself misses personal visual cues
-- LoRA: higher training complexity, deployment complexity, and overfitting risk on small datasets
+- Lightweight reranking: keeps backbone fixed, learns small user model on top. Fast iteration, low compute, lower overfitting risk.
+- LoRA adaptation: changes model weights using low-rank updates. Deeper feature adaptation when data and reason are sufficient, but higher complexity and overfitting risk.
 
 ### Representative methods
-#### AVA + NIMA-style baseline
-Use an AVA-trained aesthetic head to get a crowd prior. This is still a sensible baseline, especially if you want ranking confidence from a score distribution rather than a single regression target.
-
-#### CLIP/SigLIP frozen backbone + head
-This is the most practical modern baseline. Extract image embeddings once, cache them, and train a small technical/aesthetic/personality-aware head over those features.
-
-#### Generic score + user residual
-This is the most important personalized formulation from a product perspective. A generic model gives broad quality, and a user-specific residual shifts rankings toward the user's actual taste.
-
-#### Pairwise personal reranker
-Collect labels from "A or B?", "keep/reject", or "best in burst" actions. This is likely the best signal for a real curation interface because it matches the task more closely than asking users for scalar ratings.
-
-#### Metadata-aware personalization
-Add EXIF and workflow context as side information: camera, lens, focal length, ISO, film simulation, time, burst position, face count, and portrait/landscape category. For enthusiast users, this may be a major differentiator because public aesthetics datasets usually ignore this context.
+- **AVA + NIMA-style baseline**: Use AVA-trained aesthetic head for crowd prior.
+- **CLIP/SigLIP frozen backbone + head**: Extract embeddings once, cache them, train small head.
+- **Generic score + user residual**: Most important personalized formulation.
+- **Pairwise personal reranker**: Collect "A or B?" / "keep/reject" / "best in burst" labels.
+- **Metadata-aware personalization**: Add EXIF and workflow context as side information.
 
 ### Tradeoffs
 #### Alternatives are already strong
-Commercial tools such as Aftershoot, Narrative Select, FilterPixel, and Imagen already cover:
-- technical filtering
-- face and focus checks
-- duplicate grouping
-- workflow acceleration
-
-This means a new project is **not** compelling if it merely replicates "AI culling." It needs a sharper wedge.
+Commercial tools (Aftershoot, Narrative Select, FilterPixel, Imagen) cover technical filtering, face/focus checks, duplicate grouping, and workflow acceleration. A new project needs a sharper wedge.
 
 #### The real gap is personalization + privacy + explainability
-The best remaining opportunity is a tool that:
-- stays local
-- explains why a frame won
-- learns one user's taste quickly
-- works well for camera-folder workflows rather than only high-volume pro event pipelines
+Best opportunity: local, explainable, privacy-preserving curation that learns one user's taste quickly, for camera-folder workflows.
 
-#### Delivery mode matters a lot
-- **Local script:** good prototype, weak main UX
-- **Local web app:** strongest starting point
-- **Mobile app:** weak initial choice for RAW-heavy workflows
-- **Cloud SaaS:** high friction and crowded space
-- **Lightroom plugin:** strong wedge later, but harder first implementation
+#### Delivery mode matters
+- Local web app: strongest starting point
+- Local script: good prototype, weak main UX
+- Mobile app: weak initial choice for RAW-heavy workflows
+- Cloud SaaS: high friction and crowded space
 
 #### LoRA is attractive but premature
-LoRA sounds elegant, but the likely bottleneck early on is **not** backbone insufficiency. It is usually:
-- poor problem framing
-- weak feedback collection
-- insufficiently useful grouping/review UX
-- too little user preference data
+Likely bottleneck early on: poor problem framing, weak feedback collection, insufficient UX, too little user preference data.
 
 ### Practical guidance
 #### Verdict
 **Verdict: Only worth doing if you build it as a local-first, personal-taste-aware hobby tool or narrow enthusiast product.**
 
-More explicitly:
-- **Worth doing as a hobby project:** yes
-- **Worth doing as a niche local tool for enthusiasts/photographers:** yes, if the wedge is personal taste + explainability + privacy
-- **Probably not worth doing as a generic AI photo-culling startup:** no, not without a much stronger differentiated workflow or distribution edge
-
-#### Why this verdict follows from the evidence
-- **Current alternatives are already strong** on baseline culling.
-- **Meaningful gap still exists** in quick personalization, privacy-preserving local workflows, and taste-aware ranking.
-- **Delivery is feasible** as a local web app; it is much less compelling as mobile-first or cloud-first.
-- **Implementation complexity is moderate** if you avoid LoRA first and use frozen embeddings + reranker.
-- **User value is differentiated enough** only when the tool behaves like "my taste-aware picker," not "another generic culling app."
-
 #### Recommended product direction
-Build:
-- a **local-first web app**
-- with **embedding cache + burst grouping + score breakdowns**
-- and **pairwise preference learning**
-- exporting picks/rejects/ratings to CSV or XMP
+Build a local-first web app with embedding cache + burst grouping + score breakdowns + pairwise preference learning.
 
 #### Recommended implementation order
 1. Folder ingest + preview extraction
@@ -225,7 +131,6 @@ Build:
 - How much personal data is needed before personalization noticeably beats the generic baseline?
 - Is pairwise labeling enough, or do natural-language taste prompts add material value?
 - How much of the gain for enthusiast users comes from EXIF/style metadata rather than deeper model adaptation?
-- Does a Fujifilm/camera-specific wedge create enough delight to justify specialization?
 
 ## Evidence and Sources
 ### Primary and official product sources
@@ -251,10 +156,9 @@ Build:
 
 ## Uncertainties and Competing Views
 - Product pages oversell differentiation; some market claims are positioning rather than rigorous comparative evidence.
-- Public datasets such as AVA encode contest-community bias and may over-reward conventional "photography-club" aesthetics.
+- Public datasets such as AVA encode contest-community bias and may over-reward conventional photography-club aesthetics.
 - Some users may prefer full manual control and distrust automated picks regardless of model quality.
 - It remains unclear whether deeper finetuning meaningfully outperforms cheap reranking for small personal datasets.
-- The strongest open-source signals are recent and still immature compared with established commercial products.
 
 ## Practical Takeaways
 - If the goal is a **hobby project**, do it.
