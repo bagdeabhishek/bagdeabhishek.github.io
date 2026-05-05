@@ -12,5 +12,6 @@ Archived final versions of completed research notes. These match what's in the O
 - [LLM Post-Training RL Methods](./llm-post-training-rl-methods.md) — [Published](https://bagdeabhishek.github.io/musings/llm-post-training-rl-methods/)
 - [Personalized Photo Selection with VLMs and LoRA Preferences](./personalized-photo-selection-with-vlms.md) — [Published](https://bagdeabhishek.github.io/musings/personalized-photo-selection-with-vlms/)
 - [Retina Tears and Retinal Detachment](./retina-tears-and-detachment.md) — [Published](https://bagdeabhishek.github.io/musings/retina-tears-and-detachment/)
+- [Text-to-CAD Method Survey: From Smartphone Photos to 3D-Printable Models](./text-to-cad-method-survey.md) — [Published](https://bagdeabhishek.github.io/musings/text-to-cad-method-survey/)
 
 Auto-generated. Vault local: `/home/hermes/Documents/ObsidianVault/Completed/`

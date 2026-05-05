@@ -1,9 +1,3 @@
----
-layout: default
-title: Text-to-CAD Method Survey: From Smartphone Photos to 3D-Printable Models
-permalink: /musings/text-to-cad-method-survey/
----
-
 # Text-to-CAD Method Survey: From Smartphone Photos to 3D-Printable Models
 _AI-assisted research synthesis. Verify critical claims with primary sources._
 Status: Completed
