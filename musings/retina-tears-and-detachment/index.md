@@ -22,8 +22,8 @@ The retina is the thin light-sensitive tissue lining the back of the eye. Retina
 ## What the uploaded scan photo appears to show
 Based on the visible printout/photo provided in chat:
 - It appears to be an ophthalmology retinal imaging sheet with two circular fundus images.
-- The printout text appears to mention "M S Ramaiah Nethralaya - Whitefield, Bangalore."
-- Vertical annotation on the sheet appears to include "OS Color SLO," suggesting the left eye (`OS`).
+- The printout text appears to mention “M S Ramaiah Nethralaya - Whitefield, Bangalore.”
+- Vertical annotation on the sheet appears to include “OS Color SLO,” suggesting the left eye (`OS`).
 - The lower retinal image appears visually more irregular than the upper one, with darker pigmented/shadowed areas and some bright spots.
 
 Important limitation:

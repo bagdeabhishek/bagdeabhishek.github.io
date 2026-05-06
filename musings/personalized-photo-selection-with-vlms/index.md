@@ -14,11 +14,11 @@ Mode: method-survey
 - **Verdict: Only worth doing if you build it as a local-first, personal-taste-aware hobby tool or narrow enthusiast product.** It is **probably not worth doing** as a generic SaaS photo-culling business because the market is already crowded with strong tools.
 - The best system shape is a **staged ranker**, not a single aesthetic model: technical filtering -> burst grouping -> generic scoring -> personalized reranking.
 - **Do not start with LoRA.** The best first version is frozen CLIP/SigLIP-style embeddings plus a lightweight personalized reranker trained from pairwise picks or keep/reject signals.
-- The strongest unmet need is not generic "best photo" ranking, but **local, explainable, privacy-preserving curation that learns one user's taste quickly**.
+- The strongest unmet need is not generic “best photo” ranking, but **local, explainable, privacy-preserving curation that learns one user’s taste quickly**.
 - The best delivery mode is a **local web app** first; mobile-first and cloud-first are weaker initial bets for this workflow.
 
 ## Overview
-This note surveys how to build a hobby project that selects the best photos from a camera or photo folder using vision-language models (VLMs), while adapting selections to one user's taste through preference learning and, optionally later, LoRA-style adaptation.
+This note surveys how to build a hobby project that selects the best photos from a camera or photo folder using vision-language models (VLMs), while adapting selections to one user’s taste through preference learning and, optionally later, LoRA-style adaptation.
 
 The practical problem is harder than generic aesthetics scoring. Real photo selection mixes several objectives: technical quality, duplicate suppression, subject relevance, composition, emotion, and individual taste. Existing products already automate much of the obvious culling work, which means a new project must earn its place through a sharper wedge rather than by re-implementing baseline culling.
 
@@ -35,9 +35,9 @@ For this problem, three distinctions matter:
 A practical photo-selection system has to answer three questions at once:
 - Which images are obviously bad and should be filtered out?
 - Which images are redundant variants of the same moment?
-- Among the remaining candidates, which ones best match this particular user's taste?
+- Among the remaining candidates, which ones best match this particular user’s taste?
 
-This is why a one-shot "aesthetic model" is usually the wrong mental model. Most value comes from pipeline design and feedback loops, not from a single score.
+This is why a one-shot “aesthetic model” is usually the wrong mental model. Most value comes from pipeline design and feedback loops, not from a single score.
 
 ### Pipeline mental model
 The strongest pipeline is:
@@ -82,7 +82,7 @@ Variables:
 
 **Why it exists:** hand-crafted rules do not capture enough of what humans consider visually pleasing.
 
-**What it is good at:** giving a baseline notion of "generally strong photo."
+**What it is good at:** giving a baseline notion of “generally strong photo.”
 
 **What it does not solve well:** personal taste, burst selection, emotionally meaningful exceptions, and niche style preferences.
 
@@ -100,7 +100,7 @@ Representative references:
 
 **What it is good at:** low-data transfer, semantic awareness, and supporting downstream lightweight heads.
 
-**What it does not solve well:** direct alignment to one user's preference without extra supervision.
+**What it does not solve well:** direct alignment to one user’s preference without extra supervision.
 
 Representative references:
 - VILA (2023)
@@ -114,7 +114,7 @@ Representative references:
 
 **Why it exists:** average-crowd scores are not enough for real album curation.
 
-**What it is good at:** few-shot user adaptation when the user's preference has consistent patterns.
+**What it is good at:** few-shot user adaptation when the user’s preference has consistent patterns.
 
 **What it does not solve well:** cold start, sparse/noisy user labels, and fast-moving or contradictory taste.
 
@@ -150,10 +150,10 @@ Use an AVA-trained aesthetic head to get a crowd prior. This is still a sensible
 This is the most practical modern baseline. Extract image embeddings once, cache them, and train a small technical/aesthetic/personality-aware head over those features.
 
 #### Generic score + user residual
-This is the most important personalized formulation from a product perspective. A generic model gives broad quality, and a user-specific residual shifts rankings toward the user's actual taste.
+This is the most important personalized formulation from a product perspective. A generic model gives broad quality, and a user-specific residual shifts rankings toward the user’s actual taste.
 
 #### Pairwise personal reranker
-Collect labels from "A or B?", "keep/reject", or "best in burst" actions. This is likely the best signal for a real curation interface because it matches the task more closely than asking users for scalar ratings.
+Collect labels from “A or B?”, “keep/reject”, or “best in burst” actions. This is likely the best signal for a real curation interface because it matches the task more closely than asking users for scalar ratings.
 
 #### Metadata-aware personalization
 Add EXIF and workflow context as side information: camera, lens, focal length, ISO, film simulation, time, burst position, face count, and portrait/landscape category. For enthusiast users, this may be a major differentiator because public aesthetics datasets usually ignore this context.
@@ -166,13 +166,13 @@ Commercial tools such as Aftershoot, Narrative Select, FilterPixel, and Imagen a
 - duplicate grouping
 - workflow acceleration
 
-This means a new project is **not** compelling if it merely replicates "AI culling." It needs a sharper wedge.
+This means a new project is **not** compelling if it merely replicates “AI culling.” It needs a sharper wedge.
 
 #### The real gap is personalization + privacy + explainability
 The best remaining opportunity is a tool that:
 - stays local
 - explains why a frame won
-- learns one user's taste quickly
+- learns one user’s taste quickly
 - works well for camera-folder workflows rather than only high-volume pro event pipelines
 
 #### Delivery mode matters a lot
@@ -203,7 +203,7 @@ More explicitly:
 - **Meaningful gap still exists** in quick personalization, privacy-preserving local workflows, and taste-aware ranking.
 - **Delivery is feasible** as a local web app; it is much less compelling as mobile-first or cloud-first.
 - **Implementation complexity is moderate** if you avoid LoRA first and use frozen embeddings + reranker.
-- **User value is differentiated enough** only when the tool behaves like "my taste-aware picker," not "another generic culling app."
+- **User value is differentiated enough** only when the tool behaves like “my taste-aware picker,” not “another generic culling app.”
 
 #### Recommended product direction
 Build:
@@ -251,14 +251,14 @@ Build:
 
 ## Uncertainties and Competing Views
 - Product pages oversell differentiation; some market claims are positioning rather than rigorous comparative evidence.
-- Public datasets such as AVA encode contest-community bias and may over-reward conventional "photography-club" aesthetics.
+- Public datasets such as AVA encode contest-community bias and may over-reward conventional “photography-club” aesthetics.
 - Some users may prefer full manual control and distrust automated picks regardless of model quality.
 - It remains unclear whether deeper finetuning meaningfully outperforms cheap reranking for small personal datasets.
 - The strongest open-source signals are recent and still immature compared with established commercial products.
 
 ## Practical Takeaways
 - If the goal is a **hobby project**, do it.
-- If the goal is a **generic startup in AI photo culling**, probably don't.
+- If the goal is a **generic startup in AI photo culling**, probably don’t.
 - If the goal is a **personal, local, explainable, taste-aware picker**, the project has a real wedge.
 - Start with **frozen embeddings + personalized reranking**, not LoRA.
 - Build a **local web app** first, not mobile-first and not cloud-first.
