@@ -2,9 +2,9 @@
 
 Raw archive copies of finalized research notes from the Obsidian vault.
 
-- [Backrooms Creepypasta](./2026-04-03 - Backrooms Creepypasta.md) — [Published](https://bagdeabhishek.github.io/musings/2026-04-03-backrooms-creepypasta/)
+- [Backrooms Creepypasta](./2026-04-03%20-%20Backrooms%20Creepypasta.md) — [Published](https://bagdeabhishek.github.io/musings/2026-04-03-backrooms-creepypasta/)
 - [Why 30 fps Often Feels More Cinematic Than 60 fps](./30-fps-vs-60-fps-cinematic-look.md) — [Published](https://bagdeabhishek.github.io/musings/30-fps-vs-60-fps-cinematic-look/)
-- [Backrooms Creepypasta](./Backrooms Creepypasta.md) — [Published](https://bagdeabhishek.github.io/musings/backrooms-creepypasta/)
+- [Backrooms Creepypasta](./Backrooms%20Creepypasta.md) — [Published](https://bagdeabhishek.github.io/musings/backrooms-creepypasta/)
 - [Backrooms Creepypasta](./backrooms-creepypasta.md) — [Published](https://bagdeabhishek.github.io/musings/backrooms-creepypasta/)
 - [Cerebro — Ambient AI Display on ESP32-S3](./cerebro-ambient-ai-display.md) — [Published](https://bagdeabhishek.github.io/musings/cerebro-ambient-ai-display/)
 - [Delegating Tasks to Smaller Models Without Losing Quality](./delegating-tasks-to-smaller-models-without-losing-quality.md) — [Published](https://bagdeabhishek.github.io/musings/delegating-tasks-to-smaller-models-without-losing-quality/)
