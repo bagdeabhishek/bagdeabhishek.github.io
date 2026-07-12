@@ -31,3 +31,4 @@ jobs:
           if git diff --cached --quiet; then exit 0; fi
           git commit -m 'Sync completed Obsidian research notes (2026-07-13)'
           git push origin master
+# trigger after workflow registration
