@@ -1,9 +1,7 @@
 ---
 layout: default
 title: Fixing My 8-Year-Old Speaker Set
-permalink: /edifier_r1280t/
-redirect_from:
-  - /edifier_r1280t.md/
+permalink: /edifier_r1280t.md/
 ---
 This is my first post after a long time. Life's been moving fast for the past two years: I got married, moved to two different cities, and changed jobs. Amidst all this, I did a few small projects but didn't get a chance to document them. I thought I would get back to writing since I did something I'm pretty proud of. Better late than never, right?
 
