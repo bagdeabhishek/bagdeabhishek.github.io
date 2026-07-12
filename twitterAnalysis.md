@@ -1,9 +1,16 @@
+---
+layout: default
+title: A Network Analysis of Political Twitter
+description: Collecting tweets and using graph clustering to study political communities through retweets and mentions.
+permalink: /twitterAnalysis/
+---
+
 I worked on analyzing political affiliations based on plain text, which is pretty similar to judging whether a given article is part of fake news or not. The main objective behind this exercise was to generate some sort of labelled data to train an ML model with.
 Fake News detection is a hard problem and it becomes harder if you don't have a region-specific fake news dataset. In this blog-post, we try to find out the groups or communities using their twitter characteristics like retweets and mentions and constructing a network out of it. I analyze the results I get and will try to make some sense of the data we have.
 # Gathering Data
 The main task in our case is gathering data, I do so by writing a MultiThreaded Tweet crawler which helped me crawl roughly 50 million tweets in roughly 5 days. You can check out the repository and do some crawling for fun. The data was stored in a PostgreSQL database which was also the primary data dump.
 ## Software Used
-I used my [HomeLab](https://bagdeabhishek.github.io/homelab/) to crawl all this data.
+I used my [HomeLab](/homelab/) to crawl all this data.
 1. The first thing you need to do is set up PostgreSQL on your computer which you'll use for keeping crawled data. There are two settings you should be careful about while configuring the service. First, move the data directory to the disk you'll use for storage. Postgres by default stores the data in /var directory which can be a problem if you have your root partition on a small-capacity SSD. Also, make sure you can access the database over the network. It becomes way easier to work with the data on your local system using an IDE like DataGrip
 2. The second thing is writing a Twitter Crawler, I use the official API along with Tweepy library to crawl data. I've made the code generic enough so that anyone can download it and run using a simple configuration file. You can clone [this](https://github.com/bagdeabhishek/TweetCrawlMultiThreaded) repository and edit the configuration file. You can add the handles you want to crawl in the handles.txt file. You can update the handles needed to crawl in the next layer using the -r option.
 3. It would make working with data extremely easier if you process data on the server itself. To do this there is no better tool than Jupyter Notebooks and Jupyter Lab offers the same features with many additional features. You can install it easily using pip. Once you install it, change some parameters in the configuration file and you are ready to access over the internet.
@@ -68,7 +75,7 @@ Once you have the data the next step is visualizing the data. If you don't want 
 Once you are happy with the visualization generate it and export it in any format you want. Hot-tip you can use the plugin (Sigma.js Exporter plugin) which will generate a static browser-friendly interactive static. The visualization generated from data looks something like below. Here I've trimmed unnecessary data using filters in Gephi. To make the data visualization-friendly you can trim out small communities using partition count filter, you can also trim unimportant nodes from the graph. One way of doing that is removing nodes below a certain weighted degree but this disproportionately reduces nodes in smaller communities. A better way is to use EigenCentrality as a filtering metric, this solves the previous issue and gives a good looking graph. 
 **For an interactive version of the below image please visit this [link](../twitter_graph.html)**       
             
-![png](twitterAnalysis_files/networkfin.jpg)
+![Political Twitter network graph](/twitterAnalysis_files/networkfin.jpg)
 
 
 # Using the data to extract relevant information
@@ -210,7 +217,7 @@ get_barcharts(df,"mentions")
 ```
 
 
-![png](twitterAnalysis_files/twitterAnalysis_3_0.png)
+![Analysis output](/twitterAnalysis_files/twitterAnalysis_3_0.png)
 
 
 I've plotted the mentions in each cluster in the chart above. Why did I choose mentions instead of hashtags or retweets? One important reason was disassociation from the clustering process used in Gephi and this analysis. We have already constructed the graph using retweets, if we again use retweets to see if the clusters generated are homogenous or not, we won't' be getting any new information. Looking at the chart we can see that the clusters below have users from a specific group of similar-minded individuals. Below I discuss the characteristics of each cluster.
@@ -262,7 +269,7 @@ sns.barplot(x=filtered_clusters.index,y='count',data=filtered_clusters)
 
 
 
-![png](twitterAnalysis_files/twitterAnalysis_5_1.png)
+![Analysis output](/twitterAnalysis_files/twitterAnalysis_5_1.png)
 
 
 
@@ -283,7 +290,7 @@ plot_word_cloud(dct)
 ```
 
 
-![png](twitterAnalysis_files/twitterAnalysis_8_0.png)
+![Analysis output](/twitterAnalysis_files/twitterAnalysis_8_0.png)
 
 
 Analyzing community from cluster 0 and the hashtags it becomes clear that this community is overwhelmingly ProBJP. The top hashtags here like IndiaSupportsCAA, MannKiBaat are overwhelmingly talked about by BJP leaders and its supporters. 
@@ -299,7 +306,7 @@ plot_word_cloud(dct)
 ```
 
 
-![png](twitterAnalysis_files/twitterAnalysis_10_0.png)
+![Analysis output](/twitterAnalysis_files/twitterAnalysis_10_0.png)
 
 
 This cluster again seems to support our assumption that this cluster is mostly AntiBJP and supports Congress and AAP. One more observation we can see is that this cluster talks more about BJP than Congress or AAP, can this mean this cluster is more AntiBJP than pro-Congress or AAP? 
@@ -357,7 +364,7 @@ plot_timeseries_data(res)
 
 
 
-![png](twitterAnalysis_files/twitterAnalysis_12_1.png)
+![Analysis output](/twitterAnalysis_files/twitterAnalysis_12_1.png)
 
 
 
@@ -367,7 +374,7 @@ plot_timeseries_data(res,datetime.date(year=2016,month=1,day=1))
 ```
 
 
-![png](twitterAnalysis_files/twitterAnalysis_13_0.png)
+![Analysis output](/twitterAnalysis_files/twitterAnalysis_13_0.png)
 
 
 ## Time of the day analysis
@@ -390,7 +397,7 @@ plot_timeseries_data(res,lineplot=True)
 
 
 
-![png](twitterAnalysis_files/twitterAnalysis_15_1.png)
+![Analysis output](/twitterAnalysis_files/twitterAnalysis_15_1.png)
 
 
 ## Day of the week analysis
@@ -411,7 +418,7 @@ plot_timeseries_data(res,lineplot=True)
 
 
 
-![png](twitterAnalysis_files/twitterAnalysis_17_1.png)
+![Analysis output](/twitterAnalysis_files/twitterAnalysis_17_1.png)
 
 
 # Hyperlink Analysis
@@ -467,7 +474,7 @@ plot_wc_subplots(cluster0,cluster1,fig_size=(50,25))
 ```
 
 
-![png](twitterAnalysis_files/twitterAnalysis_19_0.png)
+![Analysis output](/twitterAnalysis_files/twitterAnalysis_19_0.png)
 
 
 In the previous cell we visualized the links from each cluster in the form of word clouds. We plot them side, cluster0(Pro-BJP) is plotted on the left side whereas the wordcloud on the right side is of the cluster1(Anti-BJP). Some observations after seeing the clusters
@@ -485,7 +492,7 @@ plot_wc_subplots(cluster0,cluster1,fig_size=(50,25))
 ```
 
 
-![png](twitterAnalysis_files/twitterAnalysis_21_0.png)
+![Analysis output](/twitterAnalysis_files/twitterAnalysis_21_0.png)
 
 
 We can see that this approach pushes up less well known sites in both clusters. This approach has another problem though, since we take all the links present in both clusters it pushes up a lot of irrelevant sites into analysis. The other problem I can see is that this approach completely ignores relative ranking of sources within a cluster. For example, if a a site xyz.com occurs as the most frequent site in cluster A but it is say the 100th most frequent site in cluster B it's removed from both the clusters. This is problematic and doesn't work. 
@@ -519,7 +526,7 @@ plot_wc_subplots(cluster0,cluster1,fig_size=(50,25))
 ```
 
 
-![png](twitterAnalysis_files/twitterAnalysis_23_0.png)
+![Analysis output](/twitterAnalysis_files/twitterAnalysis_23_0.png)
 
 
 ## New Approach \#2
@@ -532,7 +539,7 @@ plot_wc_subplots(cluster0,cluster1,fig_size=(50,25))
 ```
 
 
-![png](twitterAnalysis_files/twitterAnalysis_25_0.png)
+![Analysis output](/twitterAnalysis_files/twitterAnalysis_25_0.png)
 
 
 # Tweet Analysis (In progress)

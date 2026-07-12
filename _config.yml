@@ -13,15 +13,19 @@
 # you will see them accessed via {{ site.title }}, {{ site.email }}, and so on.
 # You can create any custom variable you would like, and they will be accessible
 # in the templates via {{ site.myvariable }}.
-title: Abhishek Bagade's blog
+title: Abhishek Bagade — Writing
 email: bagdeabhishek@gmail.com
 description: >- # this means to ignore newlines until "baseurl:"
-  This is Abhishek Bagade's blog on which I try to maintain my hobby projects and other stuff. I try to add blogs related to GATE, Arduino Projects and general ML side projects. 
+  First-hand essays and practical guides on systems, machine learning, electronics,
+  repairs, and the things I learn by building.
 baseurl: "" # the subpath of your site, e.g. /blog
-url: "https://bagdeabhishek.github.io" # the base hostname & protocol for your site, e.g. http://example.com
+url: "https://abagade.com" # the base hostname & protocol for your site, e.g. http://example.com
+lang: en-IN
+author:
+  name: Abhishek Bagade
+logo: /images/profile_pic.jpg
 twitter_username: bagdeabizek
 github_username:  bagdeabhishek
-google_analytics: [UA-102910686-2]
 facebook:
   app_id: 2503151523291173
   publisher: "https://www.facebook.com/bagdeabhishek"
@@ -53,11 +57,9 @@ whitelist:
 # Exclude from processing.
 # The following items will not be processed, by default. Create a custom list
 # to override the default setting.
-# exclude:
-#   - Gemfile
-#   - Gemfile.lock
-#   - node_modules
-#   - vendor/bundle/
-#   - vendor/cache/
-#   - vendor/gems/
-#   - vendor/ruby/
+exclude:
+  - README.md
+  - vendor/bundle
+  - vendor/cache
+  - vendor/gems
+  - vendor/ruby
